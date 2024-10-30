@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { Addresses } from 'src/address/address.model';
+import { Addresses } from '../address/address.model';
+import { Users } from '../users/users.model';
 
 
 
@@ -13,10 +14,11 @@ import { Addresses } from 'src/address/address.model';
                 host: 'localhost',
                 port: 5432,
                 username: 'postgres',
-                password: '1994sergei1994',
-                database: 'DestributorsBD',
+                password: '1234',
+                database: 'dbdestrubuters',
                 models: [
-                    Addresses
+                    Addresses,
+                    Users
                 ],
                 autoLoadModels: true
             })

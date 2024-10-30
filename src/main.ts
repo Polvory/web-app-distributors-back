@@ -10,12 +10,12 @@ async function bootstrap() {
   app.setGlobalPrefix(prefix);
   // app.enableCors()
   // Разрешаем CORS
-  app.use(
-    cors({
-      credentials: true,
-      origin: true,
-    }),
-  );
+  // app.use(
+  //   cors({
+  //     credentials: true,
+  //     origin: true,
+  //   }),
+  // );
 
   // Настройка Swagger
   const config = new DocumentBuilder()
