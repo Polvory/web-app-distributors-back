@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { Addresses } from '../address/address.model';
 import { Users } from '../users/users.model';
+import { TypeAdd } from '../type-add/type-add.model';
 
 
 
@@ -18,7 +19,8 @@ import { Users } from '../users/users.model';
                 database: 'dbdestrubuters',
                 models: [
                     Addresses,
-                    Users
+                    Users,
+                    TypeAdd
                 ],
                 autoLoadModels: true
             })
