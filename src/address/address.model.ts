@@ -29,7 +29,7 @@ export class Addresses extends Model<Addresses, AddressesAttrs> {
     @Column({ type: DataType.STRING })
     form_of_government: string;
     @Column({ type: DataType.STRING })
-    МС_for_Housing_and_CSR: string;
+    MC_for_Housing_and_CSR: string;
     @Column({ type: DataType.STRING })
     house_under_contract: string;
     @Column({ type: DataType.STRING })

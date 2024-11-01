@@ -11,7 +11,6 @@ export class AuthController {
     constructor(
         private usersService: UsersService,
         private jwtAuthService: JwtAuthService
-
     ) { }
 
     @ApiOperation({ summary: 'Логин' })
@@ -27,8 +26,6 @@ export class AuthController {
             role: user.role
         };
         const token = this.jwtAuthService.generateToken(payload)
-        // return `Bearer ${token}`
         return token
-        // return this.jwtService.sign(payload);
     }
 }

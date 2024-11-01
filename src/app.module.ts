@@ -5,13 +5,12 @@ import { UsersModule } from './users/users.module';
 import { BotModule } from './bot/bot.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { JwtAuthModule } from './jwt-auth/jwt-auth.module';
-import { APP_GUARD } from '@nestjs/core';
-import { JwtGuard } from './guards/AuthGuard';
 import { AuthModule } from './auth/auth.module';
+import { TypeAddModule } from './type-add/type-add.module';
 
 
 @Module({
-  imports: [EventEmitterModule.forRoot(), JwtAuthModule, AddressModule, DbModule, UsersModule, BotModule, AuthModule],
+  imports: [EventEmitterModule.forRoot(), JwtAuthModule, AddressModule, DbModule, UsersModule, BotModule, AuthModule, TypeAddModule],
   controllers: [],
 
 })
