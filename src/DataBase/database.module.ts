@@ -15,8 +15,8 @@ import { TypeAdd } from '../type-add/type-add.model';
                 host: 'localhost',
                 port: 5432,
                 username: 'postgres',
-                password: '1234',
-                database: 'dbdestrubuters',
+                password: '1994sergei1994',
+                database: 'DestributorsBD',
                 models: [
                     Addresses,
                     Users,

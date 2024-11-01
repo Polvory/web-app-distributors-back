@@ -13,7 +13,11 @@ export class TypeAddService {
 
 
     async getAll(archive: boolean, value: string) {
-        return await this.TypeAddRepository.findAll({ where: { archive: archive, name: { [Op.like]: `%${value}%` } } })
+        // return await this.TypeAddRepository.findAll()
+     
+        this.logger.log(value) 
+        // return await this.TypeAddRepository.findAll({ where: whereCondition });
+        return await this.TypeAddRepository.findAll({ where: { archive: archive, name: { [Op.iLike]: `%${value}%` } } })
     }
 
     async create(dto: createTypeAdd) {
