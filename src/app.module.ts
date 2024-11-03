@@ -8,10 +8,19 @@ import { JwtAuthModule } from './jwt-auth/jwt-auth.module';
 import { AuthModule } from './auth/auth.module';
 import { TypeAddModule } from './type-add/type-add.module';
 import { ImagesModule } from './images/images.module';
-
+import { TasksModule } from './add-task/tasks.module'
 // BotModule,
 @Module({
-  imports: [EventEmitterModule.forRoot(), JwtAuthModule, AddressModule, DbModule, UsersModule, AuthModule, TypeAddModule, ImagesModule],
+  imports: [EventEmitterModule.forRoot(),
+    JwtAuthModule,
+    AddressModule,
+    DbModule,
+    UsersModule,
+    AuthModule,
+    TypeAddModule,
+    ImagesModule,
+    TasksModule
+  ],
   controllers: [],
 
 })
