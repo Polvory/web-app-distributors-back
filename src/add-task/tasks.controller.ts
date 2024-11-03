@@ -1,5 +1,5 @@
 import { Controller, Post, Body, UseGuards, Put, Param, Logger, HttpException, HttpStatus } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtGuard } from '../guards/AuthGuard';
 import { RolesGuard } from '../guards/RolesGuard';
 import { Roles } from '../guards/roles.decorator';
@@ -8,10 +8,12 @@ import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
 
+
+@ApiTags('tasks')
 @Controller('tasks')
 export class TasksController {
   private readonly logger = new Logger(TasksController.name);
-  constructor(private readonly tasksService: TasksService) {}
+  constructor(private readonly tasksService: TasksService) { }
 
   @ApiOperation({ summary: 'Создать задачу' })
   @ApiResponse({ status: 201, description: 'Задача создана' })
@@ -51,7 +53,7 @@ export class TasksController {
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(ADMIN)
   @Post('/assign')
-  async assignTaskToUser(@Body() dto: AssignTaskDto) { 
+  async assignTaskToUser(@Body() dto: AssignTaskDto) {
     this.logger.log(`Назначаем задачу пользователю: ${JSON.stringify(dto)}`);
     try {
       return await this.tasksService.assignTaskToUser(dto);
