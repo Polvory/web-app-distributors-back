@@ -3,6 +3,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { Addresses } from '../address/address.model';
 import { Users } from '../users/users.model';
 import { TypeAdd } from '../type-add/type-add.model';
+import { Task } from '../add-task/tasks.model';
 
 
 
@@ -20,7 +21,8 @@ import { TypeAdd } from '../type-add/type-add.model';
                 models: [
                     Addresses,
                     Users,
-                    TypeAdd
+                    TypeAdd,
+                    Task
                 ],
                 autoLoadModels: true
             })
