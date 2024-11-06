@@ -8,6 +8,7 @@ import { NotificationService } from '../notification/notification.service'
 import { TypeAdd } from '../type-add/type-add.model';
 import { TypeAddTasks } from './type-add-tasks.model';
 import { addImgesToTask } from '../images/images.interface';
+import { CompleteTaskDto } from './dto/complete-task.dto';
 
 @Injectable()
 export class TasksService {
@@ -206,6 +207,42 @@ export class TasksService {
       this.logger.warn(`TypeAdd с ID ${type_add_id} не найден для задачи`);
     }
 
+    return task;
+  }
+
+  async completeTask(taskId: string, dto: CompleteTaskDto): Promise<Task> {
+    const task: any = await this.taskModel.findByPk(taskId, { include: { all: true } });
+    if (!task) {
+      this.logger.error(`Задача с ID ${taskId} не найдена`);
+      throw new HttpException('Задача не найдена', HttpStatus.NOT_FOUND);
+    }
+
+    // Обновление результата задачи
+    const taskResult = {
+      typeAddId: dto.typeAddId,
+      images: dto.images,
+      passed: true,
+    };
+    task.task_result = [...(task.task_result || []), taskResult];
+    task.completed = dto.completed;
+
+    await task.save();
+    const creatorNickname: any = await this.usersService.validateUser(task.tg_user_id);
+
+    const message = `\nЗадача ${taskId} \nЗавершена пользователем ${creatorNickname.tg_user_name}.\nДата: ${this.getDate(task.date)}\nПроверьте результат.`
+
+    // Уведомление администратору
+    if (task.creatorId) {
+      const creator = await this.usersService.validateUser(task.creatorId);
+      if (creator) {
+        await this.NotificationService.sendTaskAddNotification(
+          String(creator.tg_user_id), message
+          
+        );
+      }
+    }
+
+    this.logger.log(`Задача с ID ${taskId} успешно завершена`);
     return task;
   }
 
