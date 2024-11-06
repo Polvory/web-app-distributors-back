@@ -5,12 +5,17 @@ import { UsersModule } from '../users/users.module';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { Task } from './tasks.model';
 import { JwtAuthModule } from '../jwt-auth/jwt-auth.module'
+import { NotificationModule } from '../notification/notification.module';
+import { TypeAddModule } from '../type-add/type-add.module';
+import { TypeAddTasks } from './type-add-tasks.model';
 
 
 @Module({
   imports: [
+    NotificationModule,
     JwtAuthModule,
-    SequelizeModule.forFeature([Task]),
+    TypeAddModule,
+    SequelizeModule.forFeature([Task, TypeAddTasks]),
     UsersModule,
   ],
   controllers: [TasksController],

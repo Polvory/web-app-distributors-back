@@ -11,6 +11,7 @@ import { TypeAdd } from './type-add.model';
     JwtAuthModule,
     SequelizeModule.forFeature([TypeAdd]),
   ],
-  providers: [TypeAddService]
+  providers: [TypeAddService],
+  exports: [TypeAddService]
 })
 export class TypeAddModule { }

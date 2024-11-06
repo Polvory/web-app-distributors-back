@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpException, HttpStatus, Logger, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { TypeAddService } from './type-add.service'
 import { createTypeAdd } from './dto/type-add.dto';
 import { Roles } from '../guards/roles.decorator';
@@ -17,13 +17,26 @@ export class TypeAddController {
     ) { }
 
     @ApiOperation({ summary: 'Получить типы рекламы' })
-    @ApiBearerAuth('JWT') // Указываем, что используем Bearer token с именем 'JWT'
+    @ApiBearerAuth('JWT')
     @UseGuards(JwtGuard)
+    @ApiQuery({
+        name: 'archive',
+        required: true,
+        type: Boolean,
+        example: false, // Значение по умолчанию для Swagger
+    })
+    @ApiQuery({
+        name: 'value',
+        required: false,
+        type: String,
+    })
     @Get('/get/all')
     async getAll(@Query('archive') archive: boolean, @Query('value') value: string) {
+        this.logger.log(`Archive: ${archive}, Value: ${value}`);
+
         try {
-            const typeAdds = await this.TypeAddService.getAll(archive, value)
-            return typeAdds
+            const typeAdds = await this.TypeAddService.getAll(archive, value || '');
+            return typeAdds;
         } catch (error) {
             throw new HttpException(error, HttpStatus.BAD_GATEWAY);
         }

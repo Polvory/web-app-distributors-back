@@ -12,8 +12,17 @@ export class TypeAddService {
     ) { }
 
 
-    async getAll(archive: boolean, value: string) {
-        return await this.TypeAddRepository.findAll({ where: { archive: archive, name: { [Op.like]: `%${value}%` } } })
+
+    async getAll(archive: boolean, value: string): Promise<TypeAdd[]> {
+        this.logger.log('Получаем тип рекламмы')
+
+        this.logger.log(value)
+        return await this.TypeAddRepository.findAll({ where: { archive: archive, name: { [Op.iLike]: `%${value}%` } } })
+    }
+
+
+    async validate(id: string): Promise<TypeAdd> {
+        return this.TypeAddRepository.findByPk(id)
     }
 
     async create(dto: createTypeAdd) {

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Put, Param, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Put, Param, Logger, HttpException, HttpStatus, Get } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtGuard } from '../guards/AuthGuard';
 import { RolesGuard } from '../guards/RolesGuard';
@@ -7,13 +7,34 @@ import { ADMIN } from '../config/roles';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
-
+import { AddTypeAddkDto } from './dto/add-type-add.dto'
+import { TypeAddService } from '../type-add/type-add.service'
 
 @ApiTags('tasks')
 @Controller('tasks')
 export class TasksController {
   private readonly logger = new Logger(TasksController.name);
-  constructor(private readonly tasksService: TasksService) { }
+  constructor(
+    private readonly tasksService: TasksService,
+    private readonly TypeAddService: TypeAddService
+
+  ) { }
+
+
+
+  @ApiOperation({ summary: 'Получить все задачи' })
+  @ApiResponse({ status: 200, description: 'Задачи получены' })
+  @Get('/get')
+  async getTasks() {
+    this.logger.log(`Получаем задачи`);
+    try {
+      return await this.tasksService.getTasks();
+    } catch (error) {
+      this.logger.error(`Ошибка создания задачи: ${error.message}`);
+      throw new HttpException('Ошибка создания задачи', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
 
   @ApiOperation({ summary: 'Создать задачу' })
   @ApiResponse({ status: 201, description: 'Задача создана' })
@@ -54,7 +75,7 @@ export class TasksController {
   @Roles(ADMIN)
   @Post('/assign')
   async assignTaskToUser(@Body() dto: AssignTaskDto) {
-    this.logger.log(`Назначаем задачу пользователю: ${JSON.stringify(dto)}`);
+    this.logger.debug(`Назначаем задачу пользователю: ${JSON.stringify(dto)}`, dto.taskId, dto.tg_user_id);
     try {
       return await this.tasksService.assignTaskToUser(dto);
     } catch (error) {
@@ -62,4 +83,36 @@ export class TasksController {
       throw new HttpException('Ошибка назначения задачи', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+
+  @ApiOperation({ summary: 'Добавить тип рекламмы' })
+  @ApiResponse({ status: 201, description: 'Реклама добавлена' })
+  @Put('/add/type-add')
+  async addTypeAdd(@Body() AddTypeAddkDto: AddTypeAddkDto) {
+    this.logger.log(`Добовляем типы рекламмы таск: ${AddTypeAddkDto.taskId}`);
+    this.logger.log('Ищем типы рекламы из списка')
+    const validateTask = await this.tasksService.validate(AddTypeAddkDto.taskId)
+    if (!validateTask) throw new HttpException(`Такой задачи нет: ${AddTypeAddkDto.taskId}`, HttpStatus.NOT_FOUND);
+    for (let index = 0; index < AddTypeAddkDto.typeAddIds.length; index++) {
+      const element = AddTypeAddkDto.typeAddIds[index];
+      this.logger.log(`Ищем типы рекламы: ${element}`)
+      const typeAdd = await this.TypeAddService.validate(element)
+      if (!typeAdd) {
+        this.logger.error(`Реклама с таким id не найдена ${element}`)
+        throw new HttpException(`Реклама с таким id не найдена ${element}`, HttpStatus.NOT_FOUND);
+      }
+      this.logger.log(`Результат поиска ${JSON.stringify(typeAdd)}`)
+      const resAddType = await this.tasksService.addTypeAddToTask(AddTypeAddkDto.taskId, element)
+      this.logger.log(resAddType)
+    }
+    return await this.tasksService.validate(AddTypeAddkDto.taskId)
+  }
+
+
+  // Добавить фото к задаче
+  // Загрузить фото -> получить результат загрузки -> Добавить этот результат к
+
+
+
+
+
 }
