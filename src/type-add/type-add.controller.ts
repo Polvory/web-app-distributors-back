@@ -1,5 +1,5 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Logger, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpException, HttpStatus, Logger, Post, Put, Query, UseGuards } from '@nestjs/common'
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { TypeAddService } from './type-add.service'
 import { createTypeAdd } from './dto/type-add.dto';
 import { Roles } from '../guards/roles.decorator';
@@ -33,7 +33,6 @@ export class TypeAddController {
     @Get('/get/all')
     async getAll(@Query('archive') archive: boolean, @Query('value') value: string) {
         this.logger.log(`Archive: ${archive}, Value: ${value}`);
-        
         try {
             const typeAdds = await this.TypeAddService.getAll(archive, value || '');
             return typeAdds;

@@ -12,6 +12,7 @@ import { UsersModule } from '../users/users.module';
             middlewares: [session()],
         }),
     ],
-    providers: [BotService]
+    providers: [BotService],
+    exports: [BotService]
 })
 export class BotModule { }

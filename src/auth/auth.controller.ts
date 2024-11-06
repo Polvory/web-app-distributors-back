@@ -1,5 +1,5 @@
 import { Controller, HttpException, HttpStatus, Logger, Post, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { UsersService } from '../users/users.service'
 import { JwtAuthService } from '../jwt-auth/jwt-auth.service';
 
@@ -14,6 +14,13 @@ export class AuthController {
     ) { }
 
     @ApiOperation({ summary: 'Логин' })
+    @ApiQuery({
+        name: 'tg_user_id',
+        required: true,
+        type: String,
+        example: '6935066908', // Значение по умолчанию для Swagger
+    })
+
     @Post('/login')
     async login(@Query('tg_user_id') tg_user_id: string) {
         this.logger.log(`Логин пользователя ${tg_user_id}`)

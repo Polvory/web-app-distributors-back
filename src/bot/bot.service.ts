@@ -63,6 +63,21 @@ export class BotService {
             this.logger.error(error)
         }
     }
+
+
+    @OnEvent('sendNotification.event')
+    sendNotificatin(payload: any) {
+        try {
+            this.logger.log(`Notification бот tg_user_id:${payload.tg_user_id} text:${payload.text}`)
+            this.bot.sendMessage(payload.tg_user_id, payload.text).catch((error) => {
+                this.logger.error(error)
+            })
+        } catch (error) {
+            this.logger.error(error)
+        }
+    }
+
+
     // Обработчик события contact для отслеживания номера телефона
     @On('contact')
     async onContact(ctx: Context) {

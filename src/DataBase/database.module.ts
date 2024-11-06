@@ -4,6 +4,7 @@ import { Addresses } from '../address/address.model';
 import { Users } from '../users/users.model';
 import { TypeAdd } from '../type-add/type-add.model';
 import { Task } from '../add-task/tasks.model';
+import { TypeAddTasks } from '../add-task/type-add-tasks.model';
 
 
 
@@ -22,7 +23,8 @@ import { Task } from '../add-task/tasks.model';
                     Addresses,
                     Users,
                     TypeAdd,
-                    Task
+                    Task,
+                    TypeAddTasks
                 ],
                 autoLoadModels: true
             })

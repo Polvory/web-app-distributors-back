@@ -1,9 +1,13 @@
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Task } from './tasks.model';
+import { Task, TaskResult } from './tasks.model';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { UsersService } from '../users/users.service';
+import { NotificationService } from '../notification/notification.service'
+import { TypeAdd } from '../type-add/type-add.model';
+import { TypeAddTasks } from './type-add-tasks.model';
+import { addImgesToTask } from '../images/images.interface';
 
 @Injectable()
 export class TasksService {
@@ -11,17 +15,63 @@ export class TasksService {
 
   constructor(
     @InjectModel(Task) private readonly taskModel: typeof Task,
-    private readonly usersService: UsersService
-  ) {}
+    @InjectModel(TypeAddTasks) private readonly TypeAddTasksModel: typeof TypeAddTasks,
+
+
+    private readonly usersService: UsersService,
+    private readonly NotificationService: NotificationService
+  ) { }
 
   async createTask(dto: CreateTaskDto): Promise<Task> {
     try {
+      const user = await this.usersService.validateUser(dto.tg_user_id);
+      if (!user) {
+        this.logger.error(`Пользователь с tg_user_id ${dto.tg_user_id} не найден`);
+        throw new HttpException('Пользователь не найден', HttpStatus.NOT_FOUND);
+      }
+
+      // dto.creatorId = user.id
+      this.logger.log(`Добавлен автор: ${user.tg_user_id}`);
       const newTask = await this.taskModel.create(dto);
+      newTask.creatorId = user.id
+
       this.logger.log(`Задача создана: ${newTask.id}`);
-      return newTask;
+      return await newTask.save();
     } catch (error) {
       this.logger.error(`Ошибка создания задачи: ${error.message}`);
       throw new HttpException('Ошибка создания задачи', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  async addTypeAddToTask(taskId: string, typeAddId: string) {
+    try {
+
+      const task = await this.taskModel.findByPk(taskId)
+      this.logger.log(`Таска найдена`, JSON.stringify(task))
+      if (task && typeAddId) {
+        await task.$add('typeAdds', typeAddId);
+        return true
+      }
+      return false;
+    } catch (error) {
+      this.logger.error(error)
+    }
+
+  }
+
+  async validate(id: string) {
+    this.logger.log(`Ищем таску : ${id}`)
+    return await this.taskModel.findOne({ where: { id: id }, include: { all: true } })
+  }
+
+
+  async findTasksByTypeAddId(typeAddId: string, taskId: string) {
+    try {
+      const tasks = await this.TypeAddTasksModel.findOne({ where: { taskId: taskId, typeAddId: typeAddId } });
+      return tasks;
+    } catch (error) {
+      console.error('Ошибка при поиске задач по typeAddId:', error);
+      throw error;
     }
   }
 
@@ -41,9 +91,18 @@ export class TasksService {
     }
   }
 
-  async assignTaskToUser(dto: AssignTaskDto): Promise<Task> {
+
+  getDate(date: string) {
+    const newdate = new Date(date);
+    const formattedDate = newdate.toISOString().split('T')[0];
+    return formattedDate
+  }
+
+  async assignTaskToUser(dto: AssignTaskDto)
+  // : Promise<Task> 
+  {
     try {
-      const task = await this.taskModel.findByPk(dto.taskId);
+      const task: any = await this.taskModel.findByPk(dto.taskId);
       if (!task) {
         this.logger.error(`Задача с ID ${dto.taskId} не найдена`);
         throw new HttpException('Задача не найдена', HttpStatus.NOT_FOUND);
@@ -55,14 +114,99 @@ export class TasksService {
         throw new HttpException('Пользователь не найден', HttpStatus.NOT_FOUND);
       }
 
-      task.tg_user_id = dto.tg_user_id;
-      await task.save();
+      const creatorNickname: any = await this.usersService.validateUser(task.creatorId);
 
-      this.logger.log(`Задача ${task.id} назначена пользователю ${dto.tg_user_id}`);
-      return task;
+
+      if (task.executorId != user.id) {
+        this.logger.log(`Переназначили задачу c ${task.executorId} на ${user.id}`)
+        const userOld: any = await this.usersService.validateUser(task.executorId);
+        this.logger.log(userOld)
+        task.executorId = user.id;
+        const newDataTask = await task.save();
+        const messageToNew = `💚\nПривет! Новая задача\nДата: ${this.getDate(task.date)}\nАдрес: ${task.address} \nАвтор: @${creatorNickname.tg_user_name}`
+        const messageToOld = `❌❌❌\nПривет! Задача отменена \nДата: ${this.getDate(task.date)}\nАдрес: ${task.address} \nАвтор: @${creatorNickname.tg_user_name}`
+        this.NotificationService.sendTaskAddNotification(String(user.tg_user_id), messageToNew)
+        this.NotificationService.sendTaskAddNotification(String(userOld.tg_user_id), messageToOld)
+        return newDataTask
+
+      } else {
+        this.logger.log(`Задача ${task.id} назначена пользователю ${dto.tg_user_id}`);
+        task.executorId = user.id;
+        const newDataTask = await task.save();
+        const message = `💚\ Привет! Новая задача\nДата: ${this.getDate(task.date)}\nАдрес: ${task.address}\nАвтор: @${creatorNickname.tg_user_name}`
+        this.logger.log(message)
+        this.NotificationService.sendTaskAddNotification(String(user.tg_user_id), message)
+        return newDataTask
+      }
     } catch (error) {
       this.logger.error(`Ошибка назначения задачи: ${error.message}`);
       throw new HttpException('Ошибка назначения задачи', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+
+
+  async getTasks() {
+    return await this.taskModel.findAll({ include: { all: true } })
+  }
+
+  async addImages(data: addImgesToTask) {
+    const task: Task = await this.validate(data.task_id)
+    if (!task) {
+      throw new Error(`Задача с ID ${data.task_id} не найдена`);
+    }
+    const taskResult: TaskResult[] = task.task_result || [];
+    const existingResult = taskResult.find((result) => result.typeAddId === data.type_add_id);
+
+    if (existingResult) {
+      // Если такой typeAddId уже существует, добавляем новые изображения в массив
+      existingResult.images = [...new Set([...existingResult.images, ...data.files])]; // Используем Set для исключения дубликатов
+    } else {
+      // Если typeAddId не найден, создаем новый объект TaskResult
+      const newTaskResult: TaskResult = {
+        typeAddId: data.type_add_id,
+        passed: false,
+        images: data.files,
+      };
+      taskResult.push(newTaskResult);
+    }
+    // Обновляем task_result в задаче и сохраняем изменения
+    task.task_result = taskResult;
+    return await task.save();
+  }
+
+
+
+  async removeImage(task_id: string, type_add_id: string, imageName: string) {
+    const task: Task = await this.validate(task_id);
+
+    if (!task) {
+      throw new Error(`Задача с ID ${task_id} не найдена`);
+    }
+
+    const taskResult: TaskResult[] = task.task_result || [];
+    const existingResult = taskResult.find((result) => result.typeAddId === type_add_id);
+
+    if (existingResult) {
+      // Удаляем изображение по имени из массива images
+      const updatedImages = existingResult.images.filter((image) => image !== imageName);
+
+      // Проверяем, если после удаления изображений не осталось, можно удалить весь объект
+      if (updatedImages.length > 0) {
+        existingResult.images = updatedImages;
+      } else {
+        // Если изображений больше нет, удаляем весь TaskResult из массива
+        task.task_result = taskResult.filter((result) => result.typeAddId !== type_add_id);
+      }
+
+      // Сохраняем изменения
+      await task.save();
+
+      this.logger.log('Удалили изображение из списка', imageName);
+    } else {
+      this.logger.warn(`TypeAdd с ID ${type_add_id} не найден для задачи`);
+    }
+
+    return task;
+  }
+
 }

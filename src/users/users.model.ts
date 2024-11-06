@@ -1,5 +1,6 @@
-import { Model, Table, Column, DataType, BelongsToMany } from "sequelize-typescript";
+import { Model, Table, Column, DataType, BelongsToMany, HasMany } from "sequelize-typescript";
 import { DataTypes } from 'sequelize'
+import { Task } from "../add-task/tasks.model";
 
 interface UsersCreationAttrs {
     id: string;
@@ -57,4 +58,7 @@ export class Users extends Model<Users, UsersCreationAttrs> {
 
     @Column({ type: DataType.BOOLEAN, defaultValue: false })
     validate_role: boolean
+
+    @HasMany(() => Task)
+    tasks: Task[];
 }

@@ -3,7 +3,7 @@ import { Users } from './users.model';
 import { InjectModel } from '@nestjs/sequelize';
 import { createUser, editeUser } from './dto/users.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-
+import { Op } from 'sequelize';
 @Injectable()
 export class UsersService {
     private readonly logger = new Logger(UsersService.name)
@@ -20,7 +20,14 @@ export class UsersService {
 
     async validateUser(id: string | number) {
         this.logger.log(`Вадидируем юзера: ${id}`)
-        const validate = await this.UsersRepository.findOne({ where: { tg_user_id: String(id) } })
+        const validate = await this.UsersRepository.findOne({
+            where: {
+                [Op.or]: [
+                    { tg_user_id: String(id) },
+                    { id: String(id) }
+                ]
+            }
+        })
         this.logger.log(JSON.stringify(validate))
         if (validate) {
             return validate

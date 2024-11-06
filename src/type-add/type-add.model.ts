@@ -1,5 +1,7 @@
 import { Model, Table, Column, DataType, BelongsToMany } from "sequelize-typescript";
 import { DataTypes } from 'sequelize'
+import { Task } from "../add-task/tasks.model";
+import { TypeAddTasks } from "../add-task/type-add-tasks.model";
 
 
 @Table({ tableName: 'type-add' })
@@ -19,4 +21,7 @@ export class TypeAdd extends Model<TypeAdd> {
 
     @Column({ type: DataType.BOOLEAN, defaultValue: false })
     archive: boolean
+
+    @BelongsToMany(() => Task, () => TypeAddTasks)
+    tasks: Task[];
 }
