@@ -43,9 +43,9 @@ export class UsersController {
     @ApiOperation({ summary: 'Создать юзера' })
     @ApiResponse({ status: 200, description: 'Новый пользователь создан' })
     @ApiResponse({ status: 400, description: 'Ошибка валидации или создания' })
-    @ApiBearerAuth('JWT') // Указываем, что используем Bearer token с именем 'JWT'
-    @UseGuards(JwtGuard, RolesGuard)
-    @Roles(ADMIN)
+    // @ApiBearerAuth('JWT') // Указываем, что используем Bearer token с именем 'JWT'
+    // @UseGuards(JwtGuard, RolesGuard)
+    // @Roles(ADMIN)
     @Post('/create')
     async createUsers(@Body() dto: createUser) {
         try {
