@@ -171,8 +171,15 @@ export class TasksService {
       taskResult.push(newTaskResult);
     }
     // Обновляем task_result в задаче и сохраняем изменения
-    task.task_result = taskResult;
-    return await task.save();
+    // task.task_result = taskResult;
+    // return await task.save();
+        // Обновляем task_result в базе данных напрямую
+        await this.taskModel.update(
+          { task_result: taskResult },
+          { where: { id: data.task_id } }
+        );
+    
+        return task; 
   }
 
 
@@ -210,6 +217,42 @@ export class TasksService {
     return task;
   }
 
+  // async completeTask(taskId: string, dto: CompleteTaskDto): Promise<Task> {
+  //   const task: any = await this.taskModel.findByPk(taskId, { include: { all: true } });
+  //   if (!task) {
+  //     this.logger.error(`Задача с ID ${taskId} не найдена`);
+  //     throw new HttpException('Задача не найдена', HttpStatus.NOT_FOUND);
+  //   }
+
+  //   // Обновление результата задачи
+  //   const taskResult = {
+  //     typeAddId: dto.typeAddId,
+  //     images: dto.images,
+  //     passed: true,
+  //   };
+  //   task.task_result = [...(task.task_result || []), taskResult];
+  //   task.completed = dto.completed;
+
+  //   await task.save();
+  //   const creatorNickname: any = await this.usersService.validateUser(task.tg_user_id);
+
+  //   const message = `\nЗадача ${taskId} \nЗавершена пользователем ${creatorNickname.tg_user_name}.\nДата: ${this.getDate(task.date)}\nПроверьте результат.`
+
+  //   // Уведомление администратору
+  //   if (task.creatorId) {
+  //     const creator = await this.usersService.validateUser(task.creatorId);
+  //     if (creator) {
+  //       await this.NotificationService.sendTaskAddNotification(
+  //         String(creator.tg_user_id), message
+          
+  //       );
+  //     }
+  //   }
+
+  //   this.logger.log(`Задача с ID ${taskId} успешно завершена`);
+  //   return task;
+  // }
+
   async completeTask(taskId: string, dto: CompleteTaskDto): Promise<Task> {
     const task: any = await this.taskModel.findByPk(taskId, { include: { all: true } });
     if (!task) {
@@ -217,33 +260,45 @@ export class TasksService {
       throw new HttpException('Задача не найдена', HttpStatus.NOT_FOUND);
     }
 
-    // Обновление результата задачи
-    const taskResult = {
-      typeAddId: dto.typeAddId,
-      images: dto.images,
-      passed: true,
-    };
-    task.task_result = [...(task.task_result || []), taskResult];
-    task.completed = dto.completed;
+    // Инициализация task_result пустым массивом, если он отсутствует
+    task.task_result = task.task_result || [];
 
+    // Создаем карту выполнения для всех переданных `typeAddId`
+    const completedTypesMap = new Set(dto.completedTypes);
+
+    // Обновление task_result для выполненных типов
+    task.task_result = task.task_result.map(result => {
+      if (completedTypesMap.has(result.typeAddId)) {
+        return { ...result, passed: true };
+      }
+      return result;
+    });
+
+    // Проверяем, что каждый `typeAddId` из dto присутствует в task_result и имеет `passed: true`
+    const allTypesCompleted = dto.completedTypes.every(typeId =>
+      task.task_result.some(result => result.typeAddId === typeId && result.passed === true)
+    );
+
+    task.completed = allTypesCompleted;
     await task.save();
+
+    // Получение информации о пользователе-исполнителе
     const creatorNickname: any = await this.usersService.validateUser(task.tg_user_id);
 
-    const message = `\nЗадача ${taskId} \nЗавершена пользователем ${creatorNickname.tg_user_name}.\nДата: ${this.getDate(task.date)}\nПроверьте результат.`
-
-    // Уведомление администратору
+    // Уведомление администратору о прогрессе выполнения
     if (task.creatorId) {
       const creator = await this.usersService.validateUser(task.creatorId);
       if (creator) {
-        await this.NotificationService.sendTaskAddNotification(
-          String(creator.tg_user_id), message
-          
-        );
+        const message = allTypesCompleted
+          ? `\nЗадача ${taskId} \nПолностью завершена пользователем ${creatorNickname.tg_user_name}.\nДата: ${this.getDate(task.date)}\nПроверьте результат.`
+          : `\nЗадача ${taskId} \nЧастично выполнена пользователем ${creatorNickname.tg_user_name}.\nДата: ${this.getDate(task.date)}\nПроверьте прогресс.`;
+
+        await this.NotificationService.sendTaskAddNotification(String(creator.tg_user_id), message);
       }
     }
 
-    this.logger.log(`Задача с ID ${taskId} успешно завершена`);
+    this.logger.log(`Задача с ID ${taskId} обновлена: ${allTypesCompleted ? 'выполнена' : 'частично выполнена'}`);
     return task;
-  }
+}
 
 }
