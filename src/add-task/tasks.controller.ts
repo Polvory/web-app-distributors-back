@@ -9,6 +9,7 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { AddTypeAddkDto } from './dto/add-type-add.dto'
 import { TypeAddService } from '../type-add/type-add.service'
+import { CompleteTaskDto } from './dto/complete-task.dto';
 
 @ApiTags('tasks')
 @Controller('tasks')
@@ -112,7 +113,7 @@ export class TasksController {
   @ApiResponse({ status: 201, description: 'Реклама добавлена' })
   @Put('/add/type-add')
   async addTypeAdd(@Body() AddTypeAddkDto: AddTypeAddkDto) {
-    this.logger.log(`Добовляем типы рекламмы таск: ${AddTypeAddkDto.taskId}`);
+    this.logger.log(`Дабовляем типы рекламмы таск: ${AddTypeAddkDto.taskId}`);
     this.logger.log('Ищем типы рекламы из списка')
     const validateTask = await this.tasksService.validate(AddTypeAddkDto.taskId)
     if (!validateTask) throw new HttpException(`Такой задачи нет: ${AddTypeAddkDto.taskId}`, HttpStatus.NOT_FOUND);
@@ -129,6 +130,24 @@ export class TasksController {
       this.logger.log(resAddType)
     }
     return await this.tasksService.validate(AddTypeAddkDto.taskId)
+  }
+
+  @ApiOperation({ summary: 'Завершить задачу' })
+  @ApiResponse({ status: 200, description: 'Задача завершена' })
+  @ApiBearerAuth('JWT')
+  @UseGuards(JwtGuard, RolesGuard)
+  @Post('/complete/:id')
+  async completeTask(
+    @Param('id') taskId: string,
+    @Body() dto: CompleteTaskDto,
+  ) {
+    this.logger.log(`Завершаем задачу с ID: ${taskId}`);
+    try {
+      return await this.tasksService.completeTask(taskId, dto);
+    } catch (error) {
+      this.logger.error(`Ошибка завершения задачи: ${error.message}`);
+      throw new HttpException('Ошибка завершения задачи', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
 
