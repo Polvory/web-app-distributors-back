@@ -13,6 +13,7 @@ export class TypeAddService {
 
 
 
+
     async getAll(archive: boolean, value: string): Promise<TypeAdd[]> {
         this.logger.log('Получаем тип рекламмы')
 
@@ -23,6 +24,7 @@ export class TypeAddService {
 
     async validate(id: string): Promise<TypeAdd> {
         return this.TypeAddRepository.findByPk(id)
+
     }
 
     async create(dto: createTypeAdd) {
