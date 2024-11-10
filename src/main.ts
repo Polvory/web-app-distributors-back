@@ -4,18 +4,18 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cors from 'cors';
 
 async function bootstrap() {
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.PORT || 3001;
   const prefix = 'distributorsApp';
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix(prefix);
   // app.enableCors()
   // Разрешаем CORS
-  // app.use(
-  //   cors({
-  //     credentials: true,
-  //     origin: true,
-  //   }),
-  // );
+  app.use(
+    cors({
+      credentials: true,
+      origin: true,
+    }),
+  );
 
   // Настройка Swagger
   const config = new DocumentBuilder()
