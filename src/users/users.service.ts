@@ -39,7 +39,7 @@ export class UsersService {
 
     async editUser(dto: any) {
         this.logger.log(dto)
-        const user = await this.UsersRepository.findOne({ where: { tg_user_id: String(dto.tg_user_id) } })
+        const user = await this.UsersRepository.findOne({ where: { id: String(dto.id) } })
         Object.assign(user, dto);
         return await user.save()
     }

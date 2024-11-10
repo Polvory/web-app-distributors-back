@@ -8,6 +8,7 @@ import { NotificationService } from '../notification/notification.service'
 import { TypeAdd } from '../type-add/type-add.model';
 import { TypeAddTasks } from './type-add-tasks.model';
 import { addImgesToTask } from '../images/images.interface';
+import { Users } from 'src/users/users.model';
 
 @Injectable()
 export class TasksService {
@@ -21,6 +22,21 @@ export class TasksService {
     private readonly usersService: UsersService,
     private readonly NotificationService: NotificationService
   ) { }
+
+
+  async getTasksByExecutor(tg_user_id: string, completed: boolean) {
+
+    const user: Users | false = await this.usersService.validateUser(tg_user_id)
+    if (user) {
+      const tasks = await this.taskModel.findAll({
+        where: { executorId: user.id, completed: completed }, // фильтрация по полю completed в taskModel
+        include: { all: true },
+        order: [['createdAt', 'DESC']],
+      })
+      return tasks
+    }
+
+  }
 
   async createTask(dto: CreateTaskDto): Promise<Task> {
     try {
@@ -154,24 +170,32 @@ export class TasksService {
     if (!task) {
       throw new Error(`Задача с ID ${data.task_id} не найдена`);
     }
-    const taskResult: TaskResult[] = task.task_result || [];
+    this.logger.warn(`Содержимое  data${JSON.stringify(data)}`)
+
+    const taskResult: TaskResult[] = task.task_result;
     const existingResult = taskResult.find((result) => result.typeAddId === data.type_add_id);
+    this.logger.warn(`Нашли таску с ${JSON.stringify(existingResult)}`)
+    this.logger.warn(`Содержимое  task${JSON.stringify(task.task_result)}`)
+
 
     if (existingResult) {
-      // Если такой typeAddId уже существует, добавляем новые изображения в массив
-      existingResult.images = [...new Set([...existingResult.images, ...data.files])]; // Используем Set для исключения дубликатов
+      this.logger.log(`typeAddId уже существует, добавляем новые изображения в массив`)
+      //   // Если такой typeAddId уже существует, добавляем новые изображения в массив
+      //   existingResult.images = [...new Set([...existingResult.images, ...data.files])]; // Используем Set для исключения дубликатов
     } else {
-      // Если typeAddId не найден, создаем новый объект TaskResult
-      const newTaskResult: TaskResult = {
-        typeAddId: data.type_add_id,
-        passed: false,
-        images: data.files,
-      };
-      taskResult.push(newTaskResult);
+      this.logger.log(`typeAddId не найден`)
+      //   // Если typeAddId не найден, создаем новый объект TaskResult
+      //   const newTaskResult: TaskResult = {
+      //     typeAddId: data.type_add_id,
+      //     passed: false,
+      //     images: data.files,
+      //   };
+      //   taskResult.push(newTaskResult);
     }
-    // Обновляем task_result в задаче и сохраняем изменения
-    task.task_result = taskResult;
-    return await task.save();
+    // // Обновляем task_result в задаче и сохраняем изменения
+    // task.task_result = taskResult;
+    // await task.save();
+    // return task.task_result
   }
 
 

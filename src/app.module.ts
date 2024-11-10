@@ -14,7 +14,7 @@ import { NotificationModule } from './notification/notification.module';
 @Module({
   imports: [EventEmitterModule.forRoot(),
     JwtAuthModule,
-    BotModule,
+    // BotModule,
     AddressModule,
     DbModule,
     UsersModule,
