@@ -26,6 +26,7 @@ import { TypeAddTasks } from '../add-task/type-add-tasks.model';
                     Task,
                     TypeAddTasks
                 ],
+                logging: false,
                 autoLoadModels: true
             })
         }),

@@ -1,5 +1,5 @@
-import { Controller, Post, Body, UseGuards, Put, Param, Logger, HttpException, HttpStatus, Get } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Controller, Post, Body, UseGuards, Put, Param, Logger, HttpException, HttpStatus, Get, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtGuard } from '../guards/AuthGuard';
 import { RolesGuard } from '../guards/RolesGuard';
 import { Roles } from '../guards/roles.decorator';
@@ -30,6 +30,30 @@ export class TasksController {
     this.logger.log(`Получаем задачи`);
     try {
       return await this.tasksService.getTasks();
+    } catch (error) {
+      this.logger.error(`Ошибка создания задачи: ${error.message}`);
+      throw new HttpException('Ошибка создания задачи', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+
+  @ApiOperation({ summary: 'Получить задачи исполнителя' })
+  @ApiResponse({ status: 200, description: 'Задачи получены' })
+  @Get('/get/executor')
+  @ApiQuery({
+    name: 'tg_user_id',
+    required: true,
+    example: "6935066908",
+  })
+  @ApiQuery({
+    name: 'completed',
+    required: true,
+    example: false,
+  })
+  async getTasksByExecutor(@Query('tg_user_id') tg_user_id: string, @Query('completed') completed: boolean,) {
+    this.logger.log(`Получаем задачи`);
+    try {
+      return await this.tasksService.getTasksByExecutor(tg_user_id, completed);
     } catch (error) {
       this.logger.error(`Ошибка создания задачи: ${error.message}`);
       throw new HttpException('Ошибка создания задачи', HttpStatus.INTERNAL_SERVER_ERROR);

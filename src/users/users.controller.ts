@@ -74,7 +74,7 @@ export class UsersController {
     async editeUsers(@Body() dto: editeUser) {
         try {
             this.logger.log(`Редактируем данные юзера ${dto.tg_user_id}`)
-            const validateUser = await this.usersService.validateUser(dto.tg_user_id)
+            const validateUser = await this.usersService.validateUser(dto.id)
             if (!validateUser) {
                 this.logger.error(`Пользователь не найден: ${dto.tg_user_id}`)
                 throw new HttpException('Пользователь не найден', HttpStatus.NOT_FOUND);

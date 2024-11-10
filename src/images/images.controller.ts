@@ -64,7 +64,7 @@ export class ImagesController {
             },
         }),
         fileFilter: (req, file, callback) => {
-            const allowedTypes = /jpeg|jpg|png|gif/;
+            const allowedTypes = /jpeg|jpg|png|gif|webp/;
             const extName = allowedTypes.test(path.extname(file.originalname).toLowerCase());
             const mimeType = allowedTypes.test(file.mimetype);
 
@@ -81,7 +81,7 @@ export class ImagesController {
         @Query('type_add_id') type_add_id: string,
         @Query('task_id') task_id: string,
     ) {
-        this.logger.log(`Грузим картинки ${tg_user_id}`)
+        this.logger.log(`Грузим картинки ${tg_user_id} ${type_add_id} ${task_id}`)
         const user = await this.UsersService.validateUser(tg_user_id); // Валидация пользователя здесь
         const task = await this.TasksService.validate(task_id); // Валидация Таски здесь
         const typeAdd = await this.TasksService.findTasksByTypeAddId(type_add_id, task_id)
