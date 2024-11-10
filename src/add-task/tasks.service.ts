@@ -172,40 +172,32 @@ export class TasksService {
     if (!task) {
       throw new Error(`Задача с ID ${data.task_id} не найдена`);
     }
-    this.logger.warn(`Содержимое  data${JSON.stringify(data)}`)
-
-    const taskResult: TaskResult[] = task.task_result;
+    const taskResult: TaskResult[] = task.task_result || [];
     const existingResult = taskResult.find((result) => result.typeAddId === data.type_add_id);
-    this.logger.warn(`Нашли таску с ${JSON.stringify(existingResult)}`)
-    this.logger.warn(`Содержимое  task${JSON.stringify(task.task_result)}`)
-
 
     if (existingResult) {
-      this.logger.log(`typeAddId уже существует, добавляем новые изображения в массив`)
-      //   // Если такой typeAddId уже существует, добавляем новые изображения в массив
-      //   existingResult.images = [...new Set([...existingResult.images, ...data.files])]; // Используем Set для исключения дубликатов
+      // Если такой typeAddId уже существует, добавляем новые изображения в массив
+      existingResult.images = [...new Set([...existingResult.images, ...data.files])]; // Используем Set для исключения дубликатов
     } else {
-      this.logger.log(`typeAddId не найден`)
-      //   // Если typeAddId не найден, создаем новый объект TaskResult
-      //   const newTaskResult: TaskResult = {
-      //     typeAddId: data.type_add_id,
-      //     passed: false,
-      //     images: data.files,
-      //   };
-      //   taskResult.push(newTaskResult);
-    }
+      // Если typeAddId не найден, создаем новый объект TaskResult
+      const newTaskResult: TaskResult = {
+        typeAddId: data.type_add_id,
+        passed: false,
+        images: data.files,
+      };
+      taskResult.push(newTaskResult);
 
+    }
     // Обновляем task_result в задаче и сохраняем изменения
     // task.task_result = taskResult;
     // return await task.save();
-        // Обновляем task_result в базе данных напрямую
-        await this.taskModel.update(
-          { task_result: taskResult },
-          { where: { id: data.task_id } }
-        );
-    
-        return task; 
+    // Обновляем task_result в базе данных напрямую
+    await this.taskModel.update(
+      { task_result: taskResult },
+      { where: { id: data.task_id } }
+    );
 
+    return task;
   }
 
 
@@ -270,7 +262,7 @@ export class TasksService {
   //     if (creator) {
   //       await this.NotificationService.sendTaskAddNotification(
   //         String(creator.tg_user_id), message
-          
+
   //       );
   //     }
   //   }
@@ -325,6 +317,6 @@ export class TasksService {
 
     this.logger.log(`Задача с ID ${taskId} обновлена: ${allTypesCompleted ? 'выполнена' : 'частично выполнена'}`);
     return task;
-}
+  }
 
 }
