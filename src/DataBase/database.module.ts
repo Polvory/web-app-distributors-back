@@ -17,8 +17,8 @@ import { TypeAddTasks } from '../add-task/type-add-tasks.model';
                 host: 'localhost',
                 port: 5432,
                 username: 'postgres',
-                password: '1234',
-                database: 'dbdestrubuters',
+                password: 'postgres',
+                database: 'postgres',
                 models: [
                     Addresses,
                     Users,

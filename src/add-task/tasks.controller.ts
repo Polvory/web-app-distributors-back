@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Put, Param, Logger, HttpException, HttpStatus, Get, Query } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Put, Param, Logger, HttpException, HttpStatus, Get, Query, Patch } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtGuard } from '../guards/AuthGuard';
 import { RolesGuard } from '../guards/RolesGuard';
@@ -10,6 +10,8 @@ import { AssignTaskDto } from './dto/assign-task.dto';
 import { AddTypeAddkDto } from './dto/add-type-add.dto'
 import { TypeAddService } from '../type-add/type-add.service'
 import { CompleteTaskDto } from './dto/complete-task.dto';
+import { TaskStatus } from './tasks.model';
+import { ToggleTaskResultDto } from './dto/toggle-task-result.dto';
 
 @ApiTags('tasks')
 @Controller('tasks')
@@ -25,17 +27,41 @@ export class TasksController {
 
   @ApiOperation({ summary: 'Получить все задачи' })
   @ApiResponse({ status: 200, description: 'Задачи получены' })
+  @ApiQuery({ name: 'creatorId', required: false, description: 'ID создателя задачи creatorId' })
   @Get('/get')
-  async getTasks() {
+  async getTasks(@Query('creatorId') creatorId?: string) {
     this.logger.log(`Получаем задачи`);
     try {
-      return await this.tasksService.getTasks();
+      return await this.tasksService.getTasks(creatorId);
     } catch (error) {
       this.logger.error(`Ошибка создания задачи: ${error.message}`);
       throw new HttpException('Ошибка создания задачи', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
+
+  // @ApiOperation({ summary: 'Получить задачи исполнителя' })
+  // @ApiResponse({ status: 200, description: 'Задачи получены' })
+  // @Get('/get/executor')
+  // @ApiQuery({
+  //   name: 'tg_user_id',
+  //   required: true,
+  //   example: "6935066908",
+  // })
+  // @ApiQuery({
+  //   name: 'completed',
+  //   required: true,
+  //   example: false,
+  // })
+  // async getTasksByExecutor(@Query('tg_user_id') tg_user_id: string, @Query('completed') completed: boolean,) {
+  //   this.logger.log(`Получаем задачи`);
+  //   try {
+  //     return await this.tasksService.getTasksByExecutor(tg_user_id, completed);
+  //   } catch (error) {
+  //     this.logger.error(`Ошибка создания задачи: ${error.message}`);
+  //     throw new HttpException('Ошибка создания задачи', HttpStatus.INTERNAL_SERVER_ERROR);
+  //   }
+  // }
 
   @ApiOperation({ summary: 'Получить задачи исполнителя' })
   @ApiResponse({ status: 200, description: 'Задачи получены' })
@@ -47,16 +73,26 @@ export class TasksController {
   })
   @ApiQuery({
     name: 'completed',
-    required: true,
+    required: false, // Делаем необязательным для возможности фильтрации только по статусу
     example: false,
   })
-  async getTasksByExecutor(@Query('tg_user_id') tg_user_id: string, @Query('completed') completed: boolean,) {
-    this.logger.log(`Получаем задачи`);
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: TaskStatus, 
+    example: TaskStatus.IN_PROGRESS,
+  })
+  async getTasksByExecutor(
+    @Query('tg_user_id') tg_user_id: string,
+    @Query('completed') completed?: boolean,
+    @Query('status') status?: TaskStatus,
+  ) {
+    this.logger.log(`Получаем задачи исполнителя`);
     try {
-      return await this.tasksService.getTasksByExecutor(tg_user_id, completed);
+      return await this.tasksService.getTasksByExecutor(tg_user_id, completed, status);
     } catch (error) {
-      this.logger.error(`Ошибка создания задачи: ${error.message}`);
-      throw new HttpException('Ошибка создания задачи', HttpStatus.INTERNAL_SERVER_ERROR);
+      this.logger.error(`Ошибка получения задач: ${error.message}`);
+      throw new HttpException('Ошибка получения задач', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -139,14 +175,29 @@ export class TasksController {
   @Post('/complete/:id')
   async completeTask(
     @Param('id') taskId: string,
-    @Body() dto: CompleteTaskDto,
   ) {
     this.logger.log(`Завершаем задачу с ID: ${taskId}`);
     try {
-      return await this.tasksService.completeTask(taskId, dto);
+      return await this.tasksService.completeTask(taskId);
     } catch (error) {
       this.logger.error(`Ошибка завершения задачи: ${error.message}`);
       throw new HttpException('Ошибка завершения задачи', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @ApiOperation({ summary: 'Проставить чек-бокс (task_result)' })
+  @ApiResponse({ status: 200, description: 'Результат задачи обновлен' })
+  @Patch('/toggle-result/:taskId')
+  async toggleTaskResult(
+    @Param('taskId') taskId: string,
+    @Body() dto: ToggleTaskResultDto,
+  ) {
+    this.logger.log(`Обновляем результат задачи с ID: ${taskId}`);
+    try {
+      return await this.tasksService.toggleTaskResult(taskId, dto);
+    } catch (error) {
+      this.logger.error(`Ошибка обновления результата задачи: ${error.message}`);
+      throw new HttpException('Ошибка обновления результата задачи', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 

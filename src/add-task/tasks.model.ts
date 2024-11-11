@@ -10,6 +10,14 @@ export interface TaskResult {
   passed: boolean          // URL страницы
 }
 
+export enum TaskStatus {
+  NEW_TASK = 'НОВАЯ',
+  IN_PROGRESS = 'В РАБОТЕ',
+  UNDER_REVIEW = 'НА РАССМОТРЕНИЕ',
+  COMPLETED = 'ЗАВЕРШЕНА',
+  REVISE = 'ДОРАБОТАТЬ',
+}
+
 
 @Table({ tableName: 'tasks' })
 export class Task extends Model<Task> {
@@ -33,6 +41,9 @@ export class Task extends Model<Task> {
 
   @Column({ type: DataType.STRING })
   image: string;
+
+  @Column({ type: DataType.ENUM(...Object.values(TaskStatus)), allowNull: false, defaultValue: TaskStatus.NEW_TASK })
+  status: TaskStatus;
 
 
 
