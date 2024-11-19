@@ -66,4 +66,14 @@ export class editeBanned {
 
 }
 
+export class editeValidate {
+
+    @ApiProperty({ example: '6935066908', description: 'id юзера' })
+    tg_user_id: string
+
+    @ApiProperty({ example: true, description: 'потверждение роли' })
+    validate: boolean
+
+}
+
 

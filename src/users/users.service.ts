@@ -1,15 +1,17 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Users } from './users.model';
 import { InjectModel } from '@nestjs/sequelize';
-import { createUser, editeUser } from './dto/users.dto';
+import { createUser, editeBanned, editeUser, editeValidate } from './dto/users.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Op } from 'sequelize';
+import { NotificationService } from '../notification/notification.service'
 @Injectable()
 export class UsersService {
     private readonly logger = new Logger(UsersService.name)
 
     constructor(
         private eventEmitter: EventEmitter2,
+        private NotificationService: NotificationService,
         @InjectModel(Users) private UsersRepository: typeof Users,
     ) { }
 
@@ -38,23 +40,68 @@ export class UsersService {
     }
 
     async editUser(dto: any) {
-        this.logger.log(dto)
-        const user = await this.UsersRepository.findOne({ where: { id: String(dto.id) } })
-        Object.assign(user, dto);
-        return await user.save()
+        try {
+            this.logger.log(`Меняем роль: ${dto.tg_user_id}`)
+
+            const user = await this.validateUser(dto.tg_user_id)
+            if (user) {
+                Object.assign(user, dto);
+                return await user.save()
+            }
+        } catch (error) {
+            throw new HttpException(error, HttpStatus.BAD_GATEWAY);
+        }
     }
 
-    async confirmRole(tg_user_id: string) {
+    async confirmRole(dto: editeValidate) {
         try {
-            this.logger.log(`Подтверждаем роль: ${tg_user_id}`)
-            const payload = { tg_user_id: tg_user_id };
-            const user = await this.validateUser(tg_user_id)
+            this.logger.log(`Подтверждаем роль: ${dto.tg_user_id}`)
+            const payload = { tg_user_id: dto.tg_user_id };
+            const user = await this.validateUser(dto.tg_user_id)
             if (user) {
-                user.validate_role = true
-                this.eventEmitter.emit('confirmeRole.event', payload);
+                user.validate_role = dto.validate
+                if (dto.validate) {
+                    const message = `\nВаша роль потверждена!`;
+
+                    await this.NotificationService.sendTaskAddNotification(String(dto.tg_user_id), message);
+
+                } else {
+                    const message = `\nВаша роль отменена!`;
+
+                    await this.NotificationService.sendTaskAddNotification(String(dto.tg_user_id), message);
+
+                }
                 return await user.save()
             } else {
                 throw new HttpException('Не удалось подтвердить роль', HttpStatus.BAD_GATEWAY);
+            }
+        } catch (error) {
+            throw new HttpException(error, HttpStatus.BAD_GATEWAY);
+        }
+    }
+
+
+    async bannedUsers(dto: editeBanned) {
+        try {
+            this.logger.log(`Подтверждаем роль: ${dto.tg_user_id}`)
+            const payload = { tg_user_id: dto.tg_user_id };
+            const user = await this.validateUser(dto.tg_user_id)
+            if (user) {
+                user.banned = dto.banned
+                if (dto.banned) {
+                    const message = `\nПоздравляем Вас забанили`;
+
+                    await this.NotificationService.sendTaskAddNotification(String(dto.tg_user_id), message);
+
+                } else {
+                    const message = `\nБан снят!`;
+
+                    await this.NotificationService.sendTaskAddNotification(String(dto.tg_user_id), message);
+
+                }
+                return await user.save()
+            } else {
+                throw new HttpException('Не удалось забанить', HttpStatus.BAD_GATEWAY);
             }
         } catch (error) {
             throw new HttpException(error, HttpStatus.BAD_GATEWAY);
