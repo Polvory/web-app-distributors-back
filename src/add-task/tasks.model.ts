@@ -36,6 +36,10 @@ export class Task extends Model<Task> {
   @Column({ type: DataType.STRING })
   tg_user_id: string;
 
+  @Column({ type: DataType.STRING })
+  creator_user_name: string;
+
+
   @Column({ type: DataType.BOOLEAN, defaultValue: false })
   completed: boolean;
 
@@ -47,15 +51,10 @@ export class Task extends Model<Task> {
 
 
 
-  @ForeignKey(() => Users)
-  @Column({
-    type: DataType.STRING,
-    allowNull: true,
-  })
-  creatorId: string;
 
-  @BelongsTo(() => Users)
-  creator: Users;
+
+
+
 
 
   @ForeignKey(() => Users)
@@ -68,7 +67,7 @@ export class Task extends Model<Task> {
   @BelongsTo(() => Users)
   executor: Users;
 
-  @Column({ type: DataType.JSONB })
+  @Column({ type: DataType.JSON })
   task_result: TaskResult[]
 
   @BelongsToMany(() => TypeAdd, () => TypeAddTasks)

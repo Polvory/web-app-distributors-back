@@ -1,4 +1,4 @@
-import { Controller, Delete, HttpException, HttpStatus, Logger, Post, Put, Query, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { Controller, Delete, Get, HttpException, HttpStatus, Logger, NotFoundException, Param, Post, Put, Query, Res, UploadedFiles, UseInterceptors } from '@nestjs/common';
 import { ApiBody, ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
 import * as fs from 'fs';
 import { addImgesToTask } from './images.interface';
+import { Response } from 'express';
 
 @ApiTags('Images')
 @Controller('images')
@@ -19,7 +20,17 @@ export class ImagesController {
         private TasksService: TasksService
     ) { }
 
-
+    @Get(':imageName')
+    getImage(@Param('imageName') imageName: string, @Res() res: Response) {
+        const imagePath = path.join(__dirname, '..', '..', 'uploads', imageName);
+        this.logger.log(imagePath)
+        if (!fs.existsSync(imagePath)) {
+            this.logger.error('Image not found')
+            throw new NotFoundException('Image not found');
+        }
+        // , '..', '..', 'src/uplouds', imageName
+        return res.sendFile(imagePath);
+    }
 
 
 
@@ -172,4 +183,6 @@ export class ImagesController {
         }
         // Logic for deleting image goes here
     }
+
+
 }

@@ -79,7 +79,7 @@ export class TasksController {
   @ApiQuery({
     name: 'status',
     required: false,
-    enum: TaskStatus, 
+    enum: TaskStatus,
     example: TaskStatus.IN_PROGRESS,
   })
   async getTasksByExecutor(
@@ -168,6 +168,7 @@ export class TasksController {
     return await this.tasksService.validate(AddTypeAddkDto.taskId)
   }
 
+
   @ApiOperation({ summary: 'Завершить задачу' })
   @ApiResponse({ status: 200, description: 'Задача завершена' })
   @ApiBearerAuth('JWT')
@@ -199,6 +200,47 @@ export class TasksController {
       this.logger.error(`Ошибка обновления результата задачи: ${error.message}`);
       throw new HttpException('Ошибка обновления результата задачи', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+
+  @ApiOperation({ summary: 'Установить статус' })
+  @ApiResponse({ status: 200, description: 'Результат статуса обновлен' })
+  @Patch('/status')
+  @ApiQuery({
+    name: 'tg_user_id',
+    required: true,
+    example: '6935066908', // Значение по умолчанию для Swagger
+  })
+  @ApiQuery({
+    name: 'taskId',
+    required: true,
+    example: 'b2c2bf72-7644-4b2c-986c-8d9ab5dfb9b8', // Значение по умолчанию для Swagger
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: TaskStatus,
+    example: TaskStatus.IN_PROGRESS,
+  })
+  async editStatus(@Query('tg_user_id') tg_user_id: string, @Query('taskId') taskId: string, @Query('status') status: TaskStatus) {
+    this.logger.log(`Устанавливаем статус`)
+    this.logger.log(`tg_user_id`, tg_user_id)
+    this.logger.log(`taskId`, taskId)
+    this.logger.log(`status`, status)
+    try {
+      const validateTask = await this.tasksService.validate(taskId)
+      if (!validateTask) {
+        throw new HttpException('Нет такой таски', HttpStatus.NOT_FOUND);
+
+      }
+      let editTask = await this.tasksService.editStatus(validateTask, status)
+      return editTask.status
+    } catch (error) {
+      throw new HttpException(error, HttpStatus.NOT_FOUND);
+    }
+
+
+
   }
 
 

@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpException, HttpStatus, Logger, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { createUser, editeBanned, editeRole, editeUser } from './dto/users.dto';
+import { createUser, editeBanned, editeRole, editeUser, editeValidate } from './dto/users.dto';
 import { UsersService } from './users.service'
 import { JwtGuard } from '../guards/AuthGuard'
 import { RolesGuard } from '../guards/RolesGuard';
@@ -74,7 +74,7 @@ export class UsersController {
     async editeUsers(@Body() dto: editeUser) {
         try {
             this.logger.log(`Редактируем данные юзера ${dto.tg_user_id}`)
-            const validateUser = await this.usersService.validateUser(dto.id)
+            const validateUser = await this.usersService.validateUser(dto.tg_user_id)
             if (!validateUser) {
                 this.logger.error(`Пользователь не найден: ${dto.tg_user_id}`)
                 throw new HttpException('Пользователь не найден', HttpStatus.NOT_FOUND);
@@ -94,9 +94,9 @@ export class UsersController {
     @UseGuards(JwtGuard, RolesGuard)
     @Roles(ADMIN)
     @Put('/confirm/role')
-    async confirmRole(@Query('tg_user_id') tg_user_id: string) {
+    async confirmRole(@Body() dto: editeValidate) {
         try {
-            return await this.usersService.confirmRole(tg_user_id)
+            return await this.usersService.confirmRole(dto)
         } catch (error) {
             throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
 
@@ -117,6 +117,6 @@ export class UsersController {
     @Put('/banned')
     async bannedUsers(@Body() dto: editeBanned) {
         this.logger.log(`Банним пользоваетеля: ${dto.tg_user_id}`)
-        return await this.usersService.editUser(dto)
+        return await this.usersService.bannedUsers(dto)
     }
 }
