@@ -4,32 +4,32 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cors from 'cors';
 
 async function bootstrap() {
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.PORT || 3001;
   const prefix = 'distributorsApp';
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix(prefix);
   // app.enableCors()
   // Разрешаем CORS
-  // app.use(
-  //   cors({
-  //     credentials: true,
-  //     origin: true,
-  //   }),
-  // );
+  app.use(
+    cors({
+      credentials: true,
+      origin: true,
+    }),
+  );
 
   // Настройка Swagger
   const config = new DocumentBuilder()
     .setTitle('code-learn API')
     .setDescription('API для приложения code-learn')
     .setVersion('1.0.1')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT', // Формат токена
-      },
-      'JWT', // Название схемы авторизации
-    )
+    // .addBearerAuth(
+    //   {
+    //     type: 'http',
+    //     scheme: 'bearer',
+    //     bearerFormat: 'JWT', // Формат токена
+    //   },
+    //   'JWT', // Название схемы авторизации
+    // )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

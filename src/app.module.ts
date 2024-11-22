@@ -15,7 +15,8 @@ import { ExcelModule } from './Excel/Excel.module';
 @Module({
   imports: [EventEmitterModule.forRoot(),
     JwtAuthModule,
-    BotModule,
+    // BotModule,
+    ExcelModule,
     AddressModule,
     DbModule,
     UsersModule,
