@@ -9,65 +9,86 @@ export class ExcelService {
     async processExcel(file: Express.Multer.File) {
         const buffer = file.buffer;
 
+ try {
         // Логирование данных о файле
         this.logger.log(`Загружен файл: ${file.originalname}, размер: ${file.size} байт`);
+        if (!file.mimetype.includes('excel') && !file.mimetype.includes('spreadsheetml')) {
+            this.logger.error('Неверный формат файла');
+            throw new HttpException('Неверный формат файла. Пожалуйста, загрузите файл Excel.', HttpStatus.BAD_REQUEST);
+        }
+        const workbook = await xlsx.read(buffer, { type: 'buffer', cellDates: true, cellText: false });
+        this.logger.log(workbook)
 
-        try {
-            // Проверка типа загруженного файла
-            if (!file.mimetype.includes('excel') && !file.mimetype.includes('spreadsheetml')) {
-                this.logger.error('Неверный формат файла');
-                throw new HttpException('Неверный формат файла. Пожалуйста, загрузите файл Excel.', HttpStatus.BAD_REQUEST);
-            }
+        if (!workbook.SheetNames ) {
+            this.logger.error('Файл не содержит листов');
+            throw new HttpException('Файл не содержит листов', HttpStatus.BAD_REQUEST);
+        }
 
-            // Логируем часть содержимого буфера для диагностики
-            this.logger.log(`Размер буфера файла: ${buffer.length} байт`);
-            this.logger.log(`Частичное содержимое буфера: ${buffer.slice(0, 100).toString('utf8')}`);
 
-            // Чтение файла
-
-            this.logger.log('Чтение файла с помощью xlsx.read...');
-            const workbook = xlsx.read(buffer, { type: 'buffer', cellDates: true, cellText: false });
-
-            // Логируем содержимое workbook для диагностики
-            this.logger.log(`Содержимое workbook: ${JSON.stringify(workbook)}`);
-
-            // Проверка наличия листов в рабочей книге
-            if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
-                this.logger.error('Файл не содержит листов');
-                throw new HttpException('Файл не содержит листов', HttpStatus.BAD_REQUEST);
-            }
-
-            // Логируем имена листов
-            this.logger.log(`Имена листов: ${JSON.stringify(workbook.SheetNames)}`);
-
-            // Выбираем первый лист
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-
-            // Проверка наличия листа
-            if (!sheet) {
-                this.logger.error(`Лист ${sheetName} не найден`);
-                throw new HttpException('Лист не найден в файле', HttpStatus.BAD_REQUEST);
-            }
-
-            // Преобразуем данные из листа в JSON
-            this.logger.log(`Преобразуем данные с листа ${sheetName} в JSON...`);
-            const data = xlsx.utils.sheet_to_json(sheet, { defval: '' });
-
-            // Проверка на пустые данные
-            if (!data || data.length === 0) {
-                this.logger.error('Лист пуст.');
-                throw new HttpException('Лист пуст.', HttpStatus.BAD_REQUEST);
-            }
-
-            this.logger.log(`Обработано ${data.length} строк из Excel файла`);
-
-            return data;
-        } catch (error) {
+         } catch (error) {
             // Логируем ошибку
-            this.logger.error('Ошибка при обработке Excel файла:', error.message);
+            this.logger.error(error);
             throw new HttpException('Ошибка при обработке Excel файла', HttpStatus.INTERNAL_SERVER_ERROR);
         }
+        //закоменть сохрани 
+        // try {
+        //     // Проверка типа загруженного файла
+        //     if (!file.mimetype.includes('excel') && !file.mimetype.includes('spreadsheetml')) {
+        //         this.logger.error('Неверный формат файла');
+        //         throw new HttpException('Неверный формат файла. Пожалуйста, загрузите файл Excel.', HttpStatus.BAD_REQUEST);
+        //     }
+
+        //     // Логируем часть содержимого буфера для диагностики
+        //     this.logger.log(`Размер буфера файла: ${buffer.length} байт`);
+        //     this.logger.log(`Частичное содержимое буфера: ${buffer.slice(0, 100).toString('utf8')}`);
+
+        //     // Чтение файла
+        //     this.logger.log('Чтение файла с помощью xlsx.read...');
+        //     const workbook = xlsx.read(buffer, { type: 'buffer', cellDates: true, cellText: false });
+
+        //     // Логируем содержимое workbook для диагностики
+        //     this.logger.log(`Содержимое workbook: ${JSON.stringify(workbook)}`);
+        //     this.logger.log(workbook.SheetNames)
+        //     // Проверка наличия листов в рабочей книге
+        //     if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+        //         this.logger.error('Файл не содержит листов');
+        //         throw new HttpException('Файл не содержит листов', HttpStatus.BAD_REQUEST);
+        //     }
+
+        //     // Логируем имена листов
+        //     this.logger.log(`Имена листов: ${JSON.stringify(workbook.SheetNames)}`);
+
+        //     // Выбираем первый лист
+        //     const sheetName = workbook.SheetNames[0];
+        //     const sheet = workbook.Sheets[sheetName];
+
+        //     // Проверка наличия листа
+        //     if (!sheet) {
+        //         this.logger.error(`Лист ${sheetName} не найден`);
+        //         throw new HttpException('Лист не найден в файле', HttpStatus.BAD_REQUEST);
+        //     }
+
+        //     // Преобразуем данные из листа в JSON
+        //     this.logger.log(`Преобразуем данные с листа ${sheetName} в JSON...`);
+        //     const data = xlsx.utils.sheet_to_json(sheet, { defval: '' });
+
+        //     // Проверка на пустые данные
+
+        //     this.logger.warn(data.length)
+        //     if (!data || data.length === 0) {
+        //         this.logger.error('Лист пуст.');
+        //         throw new HttpException('Лист пуст.', HttpStatus.BAD_REQUEST);
+        //     }
+
+        //     this.logger.log(`Обработано ${data.length} строк из Excel файла`);
+
+        //     return data;
+        // } catch (error) {
+        //     // Логируем ошибку
+        //     this.logger.error('Ошибка при обработке Excel файла:', error.message);
+        //     throw new HttpException('Ошибка при обработке Excel файла', HttpStatus.INTERNAL_SERVER_ERROR);
+        // }
+
     }
 
     // Метод для удаления файла (заглушка)

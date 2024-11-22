@@ -24,7 +24,8 @@ import { ExcelModule } from './Excel/Excel.module';
     TypeAddModule,
     ImagesModule,
     TasksModule,
-    NotificationModule
+    NotificationModule,
+    ExcelModule
   ],
   controllers: [],
 
