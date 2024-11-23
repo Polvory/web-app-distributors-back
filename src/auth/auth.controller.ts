@@ -27,7 +27,12 @@ export class AuthController {
         const user = await this.usersService.validateUser(tg_user_id)
         if (!user) throw new HttpException('Пользовател не нйден', HttpStatus.NOT_FOUND);
 
+        if (user.banned) {
+            throw new HttpException('Пользователь забанен', HttpStatus.FORBIDDEN); // Блокируем доступ
+        }
+
         console.log(user.role)
+
         const payload = {
             tg_user_id: user.tg_user_id,
             role: user.role
