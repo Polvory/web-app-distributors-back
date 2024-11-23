@@ -10,6 +10,14 @@ export interface TaskResult {
   passed: boolean          // URL страницы
 }
 
+export enum TaskStatus {
+  NEW_TASK = 'НОВАЯ',
+  IN_PROGRESS = 'В РАБОТЕ',
+  UNDER_REVIEW = 'НА РАССМОТРЕНИЕ',
+  COMPLETED = 'ЗАВЕРШЕНА',
+  REVISE = 'ДОРАБОТАТЬ',
+}
+
 
 @Table({ tableName: 'tasks' })
 export class Task extends Model<Task> {
@@ -28,23 +36,25 @@ export class Task extends Model<Task> {
   @Column({ type: DataType.STRING })
   tg_user_id: string;
 
+  @Column({ type: DataType.STRING })
+  creator_user_name: string;
+
+
   @Column({ type: DataType.BOOLEAN, defaultValue: false })
   completed: boolean;
 
   @Column({ type: DataType.STRING })
   image: string;
 
+  @Column({ type: DataType.ENUM(...Object.values(TaskStatus)), allowNull: false, defaultValue: TaskStatus.NEW_TASK })
+  status: TaskStatus;
 
 
-  @ForeignKey(() => Users)
-  @Column({
-    type: DataType.STRING,
-    allowNull: true,
-  })
-  creatorId: string;
 
-  @BelongsTo(() => Users)
-  creator: Users;
+
+
+
+
 
 
   @ForeignKey(() => Users)
@@ -57,7 +67,7 @@ export class Task extends Model<Task> {
   @BelongsTo(() => Users)
   executor: Users;
 
-  @Column({ type: DataType.JSONB })
+  @Column({ type: DataType.JSON })
   task_result: TaskResult[]
 
   @BelongsToMany(() => TypeAdd, () => TypeAddTasks)

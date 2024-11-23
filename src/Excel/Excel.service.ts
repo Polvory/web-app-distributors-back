@@ -8,6 +8,7 @@ export class ExcelService {
 
     async processExcel(file: Express.Multer.File) {
         const buffer = file.buffer;
+
  try {
         // Логирование данных о файле
         this.logger.log(`Загружен файл: ${file.originalname}, размер: ${file.size} байт`);
@@ -87,6 +88,7 @@ export class ExcelService {
         //     this.logger.error('Ошибка при обработке Excel файла:', error.message);
         //     throw new HttpException('Ошибка при обработке Excel файла', HttpStatus.INTERNAL_SERVER_ERROR);
         // }
+
     }
 
     // Метод для удаления файла (заглушка)

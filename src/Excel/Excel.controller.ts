@@ -8,6 +8,7 @@ import { ExcelService } from './Excel.service';  // Импортируем се�
 export class ExcelController {
     private readonly logger = new Logger(ExcelController.name);  // Логгер контроллера
 
+
     constructor(private readonly excelService: ExcelService) {}
 
     // Загрузка Excel файла
@@ -40,7 +41,9 @@ export class ExcelController {
         try {
             // Делегируем обработку файла в сервис
             const data = await this.excelService.processExcel(file);
+
             // this.logger.log(`Обработано ${data.length} строк из Excel файла`);
+
 
             return { message: 'Excel файл загружен и обработан', data };
         } catch (error) {

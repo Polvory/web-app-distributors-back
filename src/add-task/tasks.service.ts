@@ -1,6 +1,6 @@
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Task, TaskResult } from './tasks.model';
+import { Task, TaskResult, TaskStatus } from './tasks.model';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { UsersService } from '../users/users.service';
@@ -8,7 +8,10 @@ import { NotificationService } from '../notification/notification.service'
 import { TypeAdd } from '../type-add/type-add.model';
 import { TypeAddTasks } from './type-add-tasks.model';
 import { addImgesToTask } from '../images/images.interface';
+import { Users } from 'src/users/users.model';
 import { CompleteTaskDto } from './dto/complete-task.dto';
+import { ToggleTaskResultDto } from './dto/toggle-task-result.dto';
+
 
 @Injectable()
 export class TasksService {
@@ -23,18 +26,68 @@ export class TasksService {
     private readonly NotificationService: NotificationService
   ) { }
 
-  async createTask(dto: CreateTaskDto): Promise<Task> {
+
+  // async getTasksByExecutor(tg_user_id: string, completed: boolean) {
+
+  //   const user: Users | false = await this.usersService.validateUser(tg_user_id)
+  //   if (user) {
+  //     const tasks = await this.taskModel.findAll({
+  //       where: { executorId: user.id, completed: completed }, // фильтрация по полю completed в taskModel
+  //       include: { all: true },
+  //       order: [['createdAt', 'DESC']],
+  //     })
+  //     return tasks
+  //   }
+
+  // }
+
+  async getTasksByExecutor(tg_user_id: string, completed?: boolean, status?: TaskStatus) {
+    const user: Users | false = await this.usersService.validateUser(tg_user_id);
+
+    // if (!user) {
+    //   throw new HttpException('Пользователь не найден', HttpStatus.NOT_FOUND);
+    // }
+
+    // Формируем условие фильтрации
+    const whereCondition: any = {};
+
+    // Учитываем completed, если параметр указан
+    if (completed !== undefined) {
+      whereCondition.completed = completed;
+
+    }
+    if (user !== false) {
+      whereCondition.executorId = user.id;
+    }
+    // Учитываем status, если параметр указан
+    if (status !== undefined) {
+      whereCondition.status = status;
+    }
+
+    // Получаем задачи с фильтрацией по whereCondition
+    const tasks = await this.taskModel.findAll({
+      where: whereCondition,
+      include: { all: true },
+      order: [['createdAt', 'DESC']],
+    });
+
+    return tasks;
+  }
+
+
+  async createTask(dto: CreateTaskDto)
+  // : Promise<Task> 
+  {
     try {
       const user = await this.usersService.validateUser(dto.tg_user_id);
       if (!user) {
         this.logger.error(`Пользователь с tg_user_id ${dto.tg_user_id} не найден`);
         throw new HttpException('Пользователь не найден', HttpStatus.NOT_FOUND);
       }
-
-      // dto.creatorId = user.id
-      this.logger.log(`Добавлен автор: ${user.tg_user_id}`);
       const newTask = await this.taskModel.create(dto);
-      newTask.creatorId = user.id
+
+      this.logger.log(`Назначаем автор: ${user.tg_user_id}`);
+      newTask.creator_user_name = user.tg_user_name;
 
       this.logger.log(`Задача создана: ${newTask.id}`);
       return await newTask.save();
@@ -51,7 +104,7 @@ export class TasksService {
       this.logger.log(`Таска найдена`, JSON.stringify(task))
       if (task && typeAddId) {
         await task.$add('typeAdds', typeAddId);
-        return true
+        return await this.taskModel.findOne({ where: { id: task.id } })
       }
       return false;
     } catch (error) {
@@ -146,8 +199,13 @@ export class TasksService {
   }
 
 
-  async getTasks() {
-    return await this.taskModel.findAll({ include: { all: true } })
+  async getTasks(creatorId?: string) {
+    const whereCondition = creatorId ? { creatorId } : {};
+    return await this.taskModel.findAll({
+      where: whereCondition,
+      include: { all: true },
+      order: [['createdAt', 'DESC']],
+    });
   }
 
   async addImages(data: addImgesToTask) {
@@ -165,14 +223,18 @@ export class TasksService {
       // Если typeAddId не найден, создаем новый объект TaskResult
       const newTaskResult: TaskResult = {
         typeAddId: data.type_add_id,
-        passed: false,
+        passed: true,
         images: data.files,
       };
       taskResult.push(newTaskResult);
+
     }
-    // Обновляем task_result в задаче и сохраняем изменения
-    task.task_result = taskResult;
-    return await task.save();
+    await this.taskModel.update(
+      { task_result: taskResult },
+      { where: { id: data.task_id } }
+    );
+    // const updatedTask = await this.taskModel.findByPk(data.task_id);
+    return taskResult;
   }
 
 
@@ -210,40 +272,122 @@ export class TasksService {
     return task;
   }
 
-  async completeTask(taskId: string, dto: CompleteTaskDto): Promise<Task> {
+
+
+  async completeTask(taskId: string): Promise<Task> {
     const task: any = await this.taskModel.findByPk(taskId, { include: { all: true } });
+
     if (!task) {
       this.logger.error(`Задача с ID ${taskId} не найдена`);
       throw new HttpException('Задача не найдена', HttpStatus.NOT_FOUND);
     }
 
-    // Обновление результата задачи
-    const taskResult = {
-      typeAddId: dto.typeAddId,
-      images: dto.images,
-      passed: true,
-    };
-    task.task_result = [...(task.task_result || []), taskResult];
-    task.completed = dto.completed;
+
+
+    // Устанавливаем статус на РАССМОТРЕНИЕ
+    task.status = TaskStatus.COMPLETED;
+    task.completed = true
 
     await task.save();
+
+    // Получение информации о пользователе-исполнителе
     const creatorNickname: any = await this.usersService.validateUser(task.tg_user_id);
 
-    const message = `\nЗадача ${taskId} \nЗавершена пользователем ${creatorNickname.tg_user_name}.\nДата: ${this.getDate(task.date)}\nПроверьте результат.`
-
-    // Уведомление администратору
+    // Отправка уведомления администратору
     if (task.creatorId) {
       const creator = await this.usersService.validateUser(task.creatorId);
       if (creator) {
-        await this.NotificationService.sendTaskAddNotification(
-          String(creator.tg_user_id), message
-          
-        );
+        const message = `\nЗадача ${taskId} \nЗавершена пользователем ${creatorNickname.tg_user_name}.\nДата: ${this.getDate(task.date)}\nПроверьте результат.`;
+
+        await this.NotificationService.sendTaskAddNotification(String(creator.tg_user_id), message);
       }
     }
 
-    this.logger.log(`Задача с ID ${taskId} успешно завершена`);
+    this.logger.log(`Задача с ID ${taskId} завершена пользователем и отправлена на рассмотрение.`);
     return task;
+  }
+
+  async toggleTaskResult(taskId: string, dto: ToggleTaskResultDto): Promise<Task> {
+    const task = await this.taskModel.findByPk(taskId);
+    this.logger.log(task.id)
+    if (!task) {
+      throw new HttpException('Задача не найдена', HttpStatus.NOT_FOUND);
+    }
+
+    this.logger.debug(JSON.stringify(task))
+
+    // Инициализация `task_result` как пустого массива, если оно отсутствует
+    let taskResult: TaskResult[] = task.task_result = task.task_result || [];
+
+    // Проверка, есть ли уже объект с данным `typeAddId`
+    const existingResultIndex = task.task_result.findIndex(
+      (result) => result.typeAddId === dto.typeAddId,
+    );
+    this.logger.debug(`Ищем таску по id: ${JSON.stringify(existingResultIndex)}`)
+
+    if (existingResultIndex != -1) {
+      this.logger.warn(`Таска есть`)
+      taskResult[existingResultIndex].passed = dto.passed
+
+    } else {
+      const payloud = {
+        typeAddId: dto.typeAddId,
+        passed: dto.passed,
+        images: [], // Пустой массив для изображений
+      }
+      this.logger.warn(`Таски нет`)
+      this.logger.warn(JSON.stringify(payloud))
+      taskResult.push(payloud)
+    }
+
+    // task.task_result[existingResultIndex].passed = dto.passed
+    // taskResult = task.task_result
+
+    this.logger.debug(JSON.stringify(taskResult))
+
+    // if (dto.passed) {
+    //   // Если чекбокс установлен, добавляем или обновляем объект
+    //   if (existingResultIndex !== -1) {
+    //     task.task_result[existingResultIndex].passed = dto.passed;
+    //   } else {
+    //     task.task_result.push({
+    //       typeAddId: dto.typeAddId,
+    //       passed: dto.passed,
+    //       images: [], // Пустой массив для изображений
+    //     });
+    // }
+
+    //   // Обновляем статус задачи на IN_PROGRESS
+    //   task.status = TaskStatus.IN_PROGRESS;
+    // } else {
+    //   // Если чекбокс снят и `images` пустой, удаляем объект
+    //   if (
+    //     existingResultIndex !== -1 &&
+    //     task.task_result[existingResultIndex].images.length === 0
+    //   ) {
+    //     task.task_result.splice(existingResultIndex, 1);
+    //   }
+    // }
+    this.logger.debug(JSON.stringify(taskResult))
+    await this.taskModel.update(
+      { task_result: taskResult, status: task.status },
+      { where: { id: taskId } }
+    );
+
+    const newTask = await this.taskModel.findOne({ where: { id: taskId }, include: { all: true } });
+    // this.logger.warn(JSON.stringify(await newTask))
+    return newTask
+  }
+
+  async editStatus(task: Task, status: TaskStatus) {
+    try {
+      task.status = status
+      return await task.save()
+    } catch (error) {
+      throw new HttpException('Не удалсь установить статус!', HttpStatus.NOT_FOUND);
+    }
+
+
   }
 
 }

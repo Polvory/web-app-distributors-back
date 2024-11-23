@@ -38,6 +38,9 @@ export class AuthController {
             role: user.role
         };
         const token = this.jwtAuthService.generateToken(payload)
-        return token
+        return {
+            user: user,
+            token: token
+        }
     }
 }
