@@ -26,7 +26,11 @@ import { SocketModule } from './WebSocket/websocket.module';
     ImagesModule,
     TasksModule,
     NotificationModule,
+
     SocketModule
+
+    ExcelModule
+
   ],
   controllers: [],
 
