@@ -30,8 +30,7 @@ export class AddressService {
             const result = await this.AddressRepository.findAll({
                 where: {
                     archiving_an_address: archive,
-                    street: { [Op.iLike]: `%${street}%` },
-                    house_number: { [Op.eq]: house_number } // Точное совпадение номера дома
+                    street: { [Op.iLike]: `%${street}%` }
                 },
             });
             this.logger.log(`Найдено адресов ${result.length} по улице: ${street}, номеру дома: ${house_number}`);

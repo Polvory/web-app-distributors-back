@@ -1,5 +1,5 @@
-import { Controller, Delete, Get, HttpException, HttpStatus, Logger, NotFoundException, Param, Post, Put, Query, Res, UploadedFiles, UseInterceptors } from '@nestjs/common';
-import { ApiBody, ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Controller, Delete, Get, HttpException, HttpStatus, Logger, NotFoundException, Param, Post, Put, Query, Res, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { UsersService } from '../users/users.service'
@@ -9,6 +9,10 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { addImgesToTask } from './images.interface';
 import { Response } from 'express';
+import { Roles } from '../guards/roles.decorator';
+import { ADMIN, USER } from '../config/roles';
+import { JwtGuard } from '../guards/AuthGuard';
+import { RolesGuard } from '../guards/RolesGuard';
 
 @ApiTags('Images')
 @Controller('images')
@@ -19,7 +23,9 @@ export class ImagesController {
         private UsersService: UsersService,
         private TasksService: TasksService
     ) { }
-
+    // @ApiBearerAuth('JWT') // Указываем, что используем Bearer token с именем 'JWT'
+    // @UseGuards(JwtGuard, RolesGuard)
+    // @Roles(ADMIN, USER)
     @Get(':imageName')
     getImage(@Param('imageName') imageName: string, @Res() res: Response) {
         const imagePath = path.join(__dirname, '..', '..', 'uploads', imageName);
@@ -36,6 +42,9 @@ export class ImagesController {
 
 
     @ApiOperation({ summary: 'Загрузка нескольких картинок' })
+    @ApiBearerAuth('JWT') // Указываем, что используем Bearer token с именем 'JWT'
+    @UseGuards(JwtGuard, RolesGuard)
+    @Roles(ADMIN, USER)
     @Post('upload')
     @ApiResponse({ status: 201, description: 'Images successfully uploaded' })
     @ApiResponse({ status: 400, description: 'Invalid file format or upload error' })
@@ -132,6 +141,9 @@ export class ImagesController {
     }
 
 
+    @ApiBearerAuth('JWT') // Указываем, что используем Bearer token с именем 'JWT'
+    @UseGuards(JwtGuard, RolesGuard)
+    @Roles(ADMIN, USER)
     @ApiOperation({ summary: 'Удалить картинку' })
     @Delete('/delete/image')
     @ApiResponse({ status: 200, description: 'Удалили изображение' })

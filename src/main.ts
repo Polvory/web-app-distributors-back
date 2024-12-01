@@ -22,14 +22,14 @@ async function bootstrap() {
     .setTitle('code-learn API')
     .setDescription('API для приложения code-learn')
     .setVersion('1.0.1')
-    // .addBearerAuth(
-    //   {
-    //     type: 'http',
-    //     scheme: 'bearer',
-    //     bearerFormat: 'JWT', // Формат токена
-    //   },
-    //   'JWT', // Название схемы авторизации
-    // )
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT', // Формат токена
+      },
+      'JWT', // Название схемы авторизации
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

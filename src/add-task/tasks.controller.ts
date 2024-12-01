@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@ne
 import { JwtGuard } from '../guards/AuthGuard';
 import { RolesGuard } from '../guards/RolesGuard';
 import { Roles } from '../guards/roles.decorator';
-import { ADMIN } from '../config/roles';
+import { ADMIN, USER } from '../config/roles';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
@@ -12,6 +12,7 @@ import { TypeAddService } from '../type-add/type-add.service'
 import { CompleteTaskDto } from './dto/complete-task.dto';
 import { TaskStatus } from './tasks.model';
 import { ToggleTaskResultDto } from './dto/toggle-task-result.dto';
+import { NotificationService } from '../notification/notification.service'
 
 @ApiTags('tasks')
 @Controller('tasks')
@@ -19,7 +20,8 @@ export class TasksController {
   private readonly logger = new Logger(TasksController.name);
   constructor(
     private readonly tasksService: TasksService,
-    private readonly TypeAddService: TypeAddService
+    private readonly TypeAddService: TypeAddService,
+    private readonly NotificationService: NotificationService
 
   ) { }
 
@@ -28,6 +30,9 @@ export class TasksController {
   @ApiOperation({ summary: 'Получить все задачи' })
   @ApiResponse({ status: 200, description: 'Задачи получены' })
   @ApiQuery({ name: 'creatorId', required: false, description: 'ID создателя задачи creatorId' })
+  @ApiBearerAuth('JWT') // Указываем, что используем Bearer token с именем 'JWT'
+  @UseGuards(JwtGuard, RolesGuard)
+  @Roles(ADMIN, USER)
   @Get('/get')
   async getTasks(@Query('creatorId') creatorId?: string) {
     this.logger.log(`Получаем задачи`);
@@ -65,6 +70,8 @@ export class TasksController {
 
   @ApiOperation({ summary: 'Получить задачи исполнителя' })
   @ApiResponse({ status: 200, description: 'Задачи получены' })
+  @UseGuards(JwtGuard, RolesGuard)
+  @Roles(ADMIN, USER)
   @Get('/get/executor')
   @ApiQuery({
     name: 'tg_user_id',
@@ -147,6 +154,9 @@ export class TasksController {
 
   @ApiOperation({ summary: 'Добавить тип рекламмы' })
   @ApiResponse({ status: 201, description: 'Реклама добавлена' })
+  @ApiBearerAuth('JWT')
+  @UseGuards(JwtGuard, RolesGuard)
+  @Roles(ADMIN)
   @Put('/add/type-add')
   async addTypeAdd(@Body() AddTypeAddkDto: AddTypeAddkDto) {
     this.logger.log(`Дабовляем типы рекламмы таск: ${AddTypeAddkDto.taskId}`);
@@ -173,13 +183,19 @@ export class TasksController {
   @ApiResponse({ status: 200, description: 'Задача завершена' })
   @ApiBearerAuth('JWT')
   @UseGuards(JwtGuard, RolesGuard)
+  @Roles(ADMIN)
   @Post('/complete/:id')
   async completeTask(
     @Param('id') taskId: string,
   ) {
     this.logger.log(`Завершаем задачу с ID: ${taskId}`);
     try {
-      return await this.tasksService.completeTask(taskId);
+      const editTask: any = await this.tasksService.completeTask(taskId);
+      if (editTask.status === TaskStatus.COMPLETED || editTask.status === TaskStatus.REVISE) {
+        const message = `Статус задачи изменени:\nid:${editTask.id}\nсатус:${editTask.status}`
+        this.NotificationService.sendTaskAddNotification(editTask.executor.tg_user_id, message)
+      }
+      return editTask
     } catch (error) {
       this.logger.error(`Ошибка завершения задачи: ${error.message}`);
       throw new HttpException('Ошибка завершения задачи', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -188,6 +204,9 @@ export class TasksController {
 
   @ApiOperation({ summary: 'Проставить чек-бокс (task_result)' })
   @ApiResponse({ status: 200, description: 'Результат задачи обновлен' })
+  @ApiBearerAuth('JWT')
+  @UseGuards(JwtGuard, RolesGuard)
+  @Roles(ADMIN, USER)
   @Patch('/toggle-result/:taskId')
   async toggleTaskResult(
     @Param('taskId') taskId: string,
@@ -205,6 +224,9 @@ export class TasksController {
 
   @ApiOperation({ summary: 'Установить статус' })
   @ApiResponse({ status: 200, description: 'Результат статуса обновлен' })
+  @ApiBearerAuth('JWT')
+  @UseGuards(JwtGuard, RolesGuard)
+  @Roles(ADMIN, USER)
   @Patch('/status')
   @ApiQuery({
     name: 'tg_user_id',
@@ -233,7 +255,16 @@ export class TasksController {
         throw new HttpException('Нет такой таски', HttpStatus.NOT_FOUND);
 
       }
-      let editTask = await this.tasksService.editStatus(validateTask, status)
+      let editTask: any = await this.tasksService.editStatus(validateTask, status)
+      this.logger.debug(JSON.stringify(editTask))
+      if (editTask.status === TaskStatus.IN_PROGRESS || editTask.status === TaskStatus.UNDER_REVIEW) {
+        const message = `Статус задачи изменени:\nid:${editTask.id}\nсатус:${editTask.status}`
+        this.NotificationService.sendTaskAddNotification(editTask.tg_user_id, message)
+      }
+      if (editTask.status === TaskStatus.COMPLETED || editTask.status === TaskStatus.REVISE) {
+        const message = `Статус задачи изменени:\nid:${editTask.id}\nсатус:${editTask.status}`
+        this.NotificationService.sendTaskAddNotification(editTask.executor.tg_user_id, message)
+      }
       return editTask.status
     } catch (error) {
       throw new HttpException(error, HttpStatus.NOT_FOUND);

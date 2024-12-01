@@ -16,7 +16,7 @@ export class AddressController {
     @ApiResponse({ status: 200, description: 'результат успешного ответа' })
     @Get('get/street')
     @ApiQuery({
-        name: 'value',
+        name: 'street',
         required: false,
         type: String,
     })
@@ -26,14 +26,19 @@ export class AddressController {
         type: Boolean,
         example: false,
     })
-
+    @ApiQuery({
+        name: 'house_number',
+        required: false,
+        type: Number,
+        example: 1,
+    })
     @Get('/get')
     async get(
         @Query('archive') archive: boolean,
         @Query('street') street: string,
         @Query('house_number') house_number: number
     ) {
-        this.logger.log(`Archive:${archive},Street: ${street},House Number: ${house_number}`);
+        this.logger.log(`Archive:${archive}, Street: ${street}, House Number: ${house_number}`);
         try {
             const addresses = await this.AddressService.get(archive, street || '', house_number);
             this.logger.log(`Успешное получение адреса:${JSON.stringify(addresses, null, 2)}`)
