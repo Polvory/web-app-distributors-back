@@ -30,7 +30,9 @@ export class AuthController {
         console.log(user.role)
         const payload = {
             tg_user_id: user.tg_user_id,
-            role: user.role
+            role: user.role,
+            validate_role: user.validate_role,
+            banned: user.banned
         };
         const token = this.jwtAuthService.generateToken(payload)
         return {

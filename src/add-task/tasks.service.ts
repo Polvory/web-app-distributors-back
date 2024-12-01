@@ -5,11 +5,9 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { UsersService } from '../users/users.service';
 import { NotificationService } from '../notification/notification.service'
-import { TypeAdd } from '../type-add/type-add.model';
 import { TypeAddTasks } from './type-add-tasks.model';
 import { addImgesToTask } from '../images/images.interface';
 import { Users } from 'src/users/users.model';
-import { CompleteTaskDto } from './dto/complete-task.dto';
 import { ToggleTaskResultDto } from './dto/toggle-task-result.dto';
 
 
@@ -27,34 +25,15 @@ export class TasksService {
   ) { }
 
 
-  // async getTasksByExecutor(tg_user_id: string, completed: boolean) {
-
-  //   const user: Users | false = await this.usersService.validateUser(tg_user_id)
-  //   if (user) {
-  //     const tasks = await this.taskModel.findAll({
-  //       where: { executorId: user.id, completed: completed }, // фильтрация по полю completed в taskModel
-  //       include: { all: true },
-  //       order: [['createdAt', 'DESC']],
-  //     })
-  //     return tasks
-  //   }
-
-  // }
 
   async getTasksByExecutor(tg_user_id: string, completed?: boolean, status?: TaskStatus) {
     const user: Users | false = await this.usersService.validateUser(tg_user_id);
-
-    // if (!user) {
-    //   throw new HttpException('Пользователь не найден', HttpStatus.NOT_FOUND);
-    // }
-
     // Формируем условие фильтрации
     const whereCondition: any = {};
 
     // Учитываем completed, если параметр указан
     if (completed !== undefined) {
       whereCondition.completed = completed;
-
     }
     if (user !== false) {
       whereCondition.executorId = user.id;
@@ -170,6 +149,8 @@ export class TasksService {
 
       const creatorNickname: any = await this.usersService.validateUser(task.creatorId);
 
+      this.logger.warn(user.id)
+      this.logger.warn(task.creator_user_name)
 
       if (task.executorId != user.id) {
         this.logger.log(`Переназначили задачу c ${task.executorId} на ${user.id}`)
@@ -177,17 +158,17 @@ export class TasksService {
         this.logger.log(userOld)
         task.executorId = user.id;
         const newDataTask = await task.save();
-        const messageToNew = `💚\nПривет! Новая задача\nДата: ${this.getDate(task.date)}\nАдрес: ${task.address} \nАвтор: @${creatorNickname.tg_user_name}`
-        const messageToOld = `❌❌❌\nПривет! Задача отменена \nДата: ${this.getDate(task.date)}\nАдрес: ${task.address} \nАвтор: @${creatorNickname.tg_user_name}`
+        const messageToNew = `💚\nПривет! Новая задача\nДата: ${this.getDate(task.date)}\nАдрес: ${task.address} \nАвтор: @${task.creator_user_name}`
+        const messageToOld = `❌❌❌\nПривет! Задача отменена \nДата: ${this.getDate(task.date)}\nАдрес: ${task.address} \nАвтор: @${task.creator_user_name}`
         this.NotificationService.sendTaskAddNotification(String(user.tg_user_id), messageToNew)
         this.NotificationService.sendTaskAddNotification(String(userOld.tg_user_id), messageToOld)
         return newDataTask
 
       } else {
-        this.logger.log(`Задача ${task.id} назначена пользователю ${dto.tg_user_id}`);
+        this.logger.debug(`Задача ${task.id} назначена пользователю ${dto.tg_user_id}`);
         task.executorId = user.id;
         const newDataTask = await task.save();
-        const message = `💚\ Привет! Новая задача\nДата: ${this.getDate(task.date)}\nАдрес: ${task.address}\nАвтор: @${creatorNickname.tg_user_name}`
+        const message = `💚\ Привет! Новая задача\nДата: ${this.getDate(task.date)}\nАдрес: ${task.address}\nАвтор: @${task.creator_user_name}`
         this.logger.log(message)
         this.NotificationService.sendTaskAddNotification(String(user.tg_user_id), message)
         return newDataTask
@@ -233,8 +214,9 @@ export class TasksService {
       { task_result: taskResult },
       { where: { id: data.task_id } }
     );
-    // const updatedTask = await this.taskModel.findByPk(data.task_id);
-    return taskResult;
+    this.logger.debug(taskResult)
+    const updatedTask = await this.taskModel.findByPk(data.task_id);
+    return updatedTask.task_result
   }
 
 

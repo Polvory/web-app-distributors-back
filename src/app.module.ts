@@ -11,6 +11,7 @@ import { ImagesModule } from './images/images.module';
 import { TasksModule } from './add-task/tasks.module'
 import { NotificationModule } from './notification/notification.module';
 import { ExcelModule } from './Excel/Excel.module';
+import { SocketModule } from './WebSocket/websocket.module';
 // BotModule,
 @Module({
   imports: [EventEmitterModule.forRoot(),
@@ -24,7 +25,8 @@ import { ExcelModule } from './Excel/Excel.module';
     TypeAddModule,
     ImagesModule,
     TasksModule,
-    NotificationModule
+    NotificationModule,
+    SocketModule
   ],
   controllers: [],
 

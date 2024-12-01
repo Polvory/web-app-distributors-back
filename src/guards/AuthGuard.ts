@@ -8,7 +8,7 @@ export class JwtGuard implements CanActivate {
     canActivate(context: ExecutionContext): boolean {
         const request = context.switchToHttp().getRequest();
         const authHeader = request.headers['authorization']
-        return true
+        // return true
 
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             throw new UnauthorizedException('Отсутствует токен авторизации');
@@ -24,6 +24,15 @@ export class JwtGuard implements CanActivate {
         try {
             const decoded = this.JwtAuthService.verifyToken(token);
             request.user = decoded; // добавляем пользователя в запрос
+
+            console.log(`Проверка роли: ${decoded.validate_role}`)
+            console.log(`Бан: ${decoded.banned}`)
+            if (decoded.validate_role === false) {
+                throw new UnauthorizedException('Пользоваетль не одобрен!');
+            }
+            if (decoded.banned === true) {
+                throw new UnauthorizedException('Пользоваетль забанен!');
+            }
             return true;
         } catch (err) {
             throw new UnauthorizedException('Invalid or expired token');

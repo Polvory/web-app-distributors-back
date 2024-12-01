@@ -5,7 +5,7 @@ import { UsersService } from './users.service'
 import { JwtGuard } from '../guards/AuthGuard'
 import { RolesGuard } from '../guards/RolesGuard';
 import { Roles } from '../guards/roles.decorator';
-import { ADMIN } from '../config/roles';
+import { ADMIN, USER } from '../config/roles';
 
 @ApiTags('users')
 @Controller('users')
@@ -16,12 +16,12 @@ export class UsersController {
         private usersService: UsersService
     ) { }
 
-    @ApiBearerAuth('JWT') // Указываем, что используем Bearer token с именем 'JWT'
-    @Get('headers')
-    getHeaders(@Req() request: Request) {
-        console.log('Received headers:', request.headers);
-        return request.headers; // Возвращаем заголовки в ответе
-    }
+    // @ApiBearerAuth('JWT') // Указываем, что используем Bearer token с именем 'JWT'
+    // @Get('headers')
+    // getHeaders(@Req() request: Request) {
+    //     console.log('Received headers:', request.headers);
+    //     return request.headers; // Возвращаем заголовки в ответе
+    // }
 
 
     @ApiOperation({ summary: 'Получить всех юзеров' })
@@ -43,9 +43,9 @@ export class UsersController {
     @ApiOperation({ summary: 'Создать юзера' })
     @ApiResponse({ status: 200, description: 'Новый пользователь создан' })
     @ApiResponse({ status: 400, description: 'Ошибка валидации или создания' })
-    // @ApiBearerAuth('JWT') // Указываем, что используем Bearer token с именем 'JWT'
-    // @UseGuards(JwtGuard, RolesGuard)
-    // @Roles(ADMIN)
+    @ApiBearerAuth('JWT') // Указываем, что используем Bearer token с именем 'JWT'
+    @UseGuards(JwtGuard, RolesGuard)
+    @Roles(ADMIN)
     @Post('/create')
     async createUsers(@Body() dto: createUser) {
         try {
@@ -69,7 +69,8 @@ export class UsersController {
     @ApiResponse({ status: 201, description: 'Данные изменены' })
     @ApiResponse({ status: 400, description: 'Ошибка изменеия' })
     @ApiBearerAuth('JWT') // Указываем, что используем Bearer token с именем 'JWT'
-    @UseGuards(JwtGuard)
+    @UseGuards(JwtGuard, RolesGuard)
+    @Roles(ADMIN, USER)
     @Put('/edite')
     async editeUsers(@Body() dto: editeUser) {
         try {
@@ -105,6 +106,9 @@ export class UsersController {
 
     @ApiOperation({ summary: 'Редактировать роль юзера' })
     @ApiResponse({ status: 200 })
+    @ApiBearerAuth('JWT') // Указываем, что используем Bearer token с именем 'JWT'
+    @UseGuards(JwtGuard, RolesGuard)
+    @Roles(ADMIN)
     @Put('/edite/role')
     async editeRoleUsers(@Body() dto: editeRole) {
         this.logger.log(`Редактируем роль юзера: ${dto.tg_user_id}`)
@@ -114,6 +118,9 @@ export class UsersController {
 
     @ApiOperation({ summary: 'Забанить' })
     @ApiResponse({ status: 200 })
+    @ApiBearerAuth('JWT') // Указываем, что используем Bearer token с именем 'JWT'
+    @UseGuards(JwtGuard, RolesGuard)
+    @Roles(ADMIN)
     @Put('/banned')
     async bannedUsers(@Body() dto: editeBanned) {
         this.logger.log(`Банним пользоваетеля: ${dto.tg_user_id}`)

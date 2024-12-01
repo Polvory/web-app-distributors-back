@@ -38,7 +38,7 @@ export class BotService {
             }
             const newUser = await this.usersService.createUser(payloud)
             if (newUser) {
-                ctx.sendMessage(`Привет !`,
+                ctx.sendMessage(`Здравствуйте! Прежде чем начать пользоваться сервисом, пожалуйста, отправьте свой номер телефона.`,
                     Markup.keyboard([
                         Markup.button.contactRequest("Отправить номер телефона")
                     ]).oneTime()
@@ -90,7 +90,7 @@ export class BotService {
         // Сохраняем номер телефона в базе данных
         const savePhoneNamber = await this.usersService.savePhoneNumber(userId, phoneNumber);
         if (savePhoneNamber) {
-            ctx.reply(`Спасибо! Ваш номер телефона успешно получен. Выбери роль:`,
+            ctx.reply(`Спасибо! Мы успешно получили ваш номер телефона. Пожалуйста, выберите вашу роль:`,
                 Markup.inlineKeyboard([
                     [
                         Markup.button.callback('Админ', 'send_role:Admin'),
